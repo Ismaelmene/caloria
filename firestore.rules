@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && myRole() == 'admin';
+    }
+
+    function isAffiliate() {
+      return isSignedIn() && myRole() == 'affiliate';
+    }
+
+    // ---- Usuários ----
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // o próprio usuário pode criar/atualizar seus dados básicos, mas NÃO pode
+      // alterar 'role' ou 'subscriptionStatus' por conta própria (isso só via
+      // funções serverless, que usam o Admin SDK e ignoram estas regras)
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'subscriptionStatus']);
+      allow write: if isAdmin();
+
+      match /meals/{mealId} {
+        allow read, create, update, delete: if isSignedIn() && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
+    }
+
+    // ---- Afiliados ----
+    match /affiliates/{affiliateId} {
+      allow read: if isSignedIn() && (request.auth.uid == affiliateId || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // ---- Comissões (só as funções serverless escrevem; afiliado e admin leem) ----
+    match /commissions/{commissionId} {
+      allow read: if isSignedIn() && (isAdmin() || (isAffiliate() && resource.data.affiliateId == request.auth.uid));
+      allow write: if isAdmin();
+    }
+
+    // ---- Pagamentos (ledger de receita, só admin vê) ----
+    match /payments/{paymentId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}

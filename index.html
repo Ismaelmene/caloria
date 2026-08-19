@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Calorias por Foto</title>
+<link rel="manifest" href="/manifest.json" />
+<style>
+  :root {
+    --bg: #0b0f14;
+    --panel: #131a22;
+    --border: #223140;
+    --text: #e6edf3;
+    --muted: #8aa0b3;
+    --accent: #3ecf8e;
+    --danger: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 700; }
+  nav { display: flex; gap: 6px; flex-wrap: wrap; }
+  nav button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  nav button.active { background: var(--accent); color: #04140c; border-color: var(--accent); font-weight: 600; }
+  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card h2 { margin-top: 0; font-size: 17px; }
+  input, select {
+    width: 100%;
+    padding: 10px 12px;
+    margin: 6px 0 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #0d141b;
+    color: var(--text);
+    font-size: 14px;
+  }
+  label { font-size: 13px; color: var(--muted); }
+  button.primary {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: #04140c;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  button.secondary {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .error { color: var(--danger); font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; }
+  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .stat {
+    flex: 1;
+    min-width: 120px;
+    background: #0d141b;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .stat .value { font-size: 20px; font-weight: 700; }
+  .stat .label { font-size: 12px; color: var(--muted); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge.active { background: rgba(62,207,142,0.15); color: var(--accent); }
+  .badge.inactive { background: rgba(255,107,107,0.15); color: var(--danger); }
+  .hidden { display: none !important; }
+  #photoPreview { max-width: 100%; border-radius: 10px; margin: 10px 0; display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Calorias por Foto 🇧🇷</h1>
+  <nav id="mainNav"></nav>
+</header>
+
+<main>
+
+  <!-- ---------------- LOGIN / CADASTRO ---------------- -->
+  <section id="view-login" class="card hidden">
+    <h2 id="authTitle">Entrar</h2>
+    <label>E-mail</label>
+    <input id="authEmail" type="email" placeholder="seu@email.com" />
+    <label>Senha</label>
+    <input id="authPassword" type="password" placeholder="••••••••" />
+    <div id="refBox" class="hidden">
+      <p class="muted">Você foi indicado por um afiliado (código: <strong id="refCodeShown"></strong>)</p>
+    </div>
+    <button class="primary" id="authSubmitBtn" onclick="handleAuthSubmit()">Entrar</button>
+    <p class="muted" style="margin-top:10px;">
+      <a href="#" id="authToggleLink" onclick="toggleAuthMode(event)" style="color:var(--accent);">Ainda não tenho conta — criar cadastro</a>
+    </p>
+    <p class="error" id="authError"></p>
+  </section>
+
+  <!-- ---------------- APP DO USUÁRIO ---------------- -->
+  <section id="view-app" class="card hidden">
+    <h2>Meu diário de hoje</h2>
+    <div id="subBanner" class="card" style="background:#0d141b;"></div>
+
+    <label>Foto do prato</label>
+    <input type="file" accept="image/*" capture="environment" id="photoInput" onchange="onPhotoSelected(event)" />
+    <img id="photoPreview" />
+    <button class="primary" id="analyzeBtn" onclick="analyzePhoto()" disabled>Analisar foto</button>
+    <p class="muted" id="analyzeStatus"></p>
+
+    <div id="analyzeResult"></div>
+
+    <h2 style="margin-top:24px;">Refeições de hoje</h2>
+    <div class="stat-row">
+      <div class="stat"><div class="value" id="todayCalories">0</div><div class="label">calorias hoje</div></div>
+    </div>
+    <table id="mealsTable">
+      <thead><tr><th>Prato</th><th>Kcal</th><th>Hora</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- ---------------- PAINEL DO AFILIADO ---------------- -->
+  <section id="view-afiliado" class="card hidden">
+    <h2>Painel do afiliado</h2>
+    <p class="muted">Seu link de indicação (compartilhe nas redes):</p>
+    <input id="affiliateLink" readonly onclick="this.select()" />
+    <button class="secondary" onclick="copyAffiliateLink()">Copiar link</button>
+
+    <div class="stat-row" style="margin-top:20px;">
+      <div class="stat"><div class="value" id="affTotalReferred">0</div><div class="label">pessoas indicadas</div></div>
+      <div class="stat"><div class="value" id="affTotalActive">0</div><div class="label">assinantes ativos</div></div>
+      <div class="stat"><div class="value" id="affTotalEarned">R$ 0</div><div class="label">total ganho</div></div>
+    </div>
+
+    <h2 style="margin-top:20px;">Comissões recebidas</h2>
+    <table id="commissionsTable">
+      <thead><tr><th>Período</th><th>Cliente</th><th>Base</th><th>Comissão</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- ---------------- PAINEL ADMIN ---------------- -->
+  <section id="view-admin" class="card hidden">
+    <h2>Painel administrativo</h2>
+    <div class="stat-row">
+      <div class="stat"><div class="value" id="adminTotalUsers">0</div><div class="label">usuários totais</div></div>
+      <div class="stat"><div class="value" id="adminTotalActive">0</div><div class="label">assinantes ativos</div></div>
+      <div class="stat"><div class="value" id="adminTotalRevenue">R$ 0</div><div class="label">receita (registrada)</div></div>
+      <div class="stat"><div class="value" id="adminTotalCommissions">R$ 0</div><div class="label">comissões pagas/a pagar</div></div>
+    </div>
+
+    <h2 style="margin-top:20px;">Afiliados</h2>
+    <table id="adminAffiliatesTable">
+      <thead><tr><th>Nome</th><th>Código</th><th>Comissão</th><th>Indicados ativos</th><th>Total ganho</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <h2 style="margin-top:20px;">Promover usuário</h2>
+    <p class="muted">Cole o UID do usuário (você encontra no Firebase Console &gt; Authentication) para torná-lo afiliado ou admin.</p>
+    <label>UID do usuário</label>
+    <input id="promoteUid" placeholder="uid do Firebase Auth" />
+    <label>Nome (se for virar afiliado)</label>
+    <input id="promoteName" placeholder="Nome do afiliado" />
+    <label>Comissão (ex: 0.30 = 30%)</label>
+    <input id="promoteRate" placeholder="0.30" />
+    <label>Novo papel</label>
+    <select id="promoteRole">
+      <option value="affiliate">Afiliado</option>
+      <option value="admin">Admin</option>
+      <option value="user">Usuário comum</option>
+    </select>
+    <button class="primary" onclick="promoteUser()">Aplicar</button>
+    <p class="muted" id="promoteStatus"></p>
+  </section>
+
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, collection, addDoc, query, where, getDocs, orderBy, Timestamp, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+// ⚠️ Cole aqui a configuração do SEU projeto Firebase
+// (Firebase Console > Configurações do projeto > Seus apps > SDK setup)
+// Esses valores NÃO são secretos — é seguro deixá-los no código do front-end.
+const firebaseConfig = {
+  apiKey: "COLE_AQUI",
+  authDomain: "SEU-PROJETO.firebaseapp.com",
+  projectId: "SEU-PROJETO",
+  storageBucket: "SEU-PROJETO.appspot.com",
+  messagingSenderId: "COLE_AQUI",
+  appId: "COLE_AQUI",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+window._state = { user: null, role: null, idToken: null };
+
+// ---------- Navegação ----------
+const NAV_ITEMS = {
+  app: { label: "Meu diário", roles: ["user", "affiliate", "admin"] },
+  afiliado: { label: "Painel afiliado", roles: ["affiliate", "admin"] },
+  admin: { label: "Painel admin", roles: ["admin"] },
+};
+
+function renderNav() {
+  const nav = document.getElementById("mainNav");
+  nav.innerHTML = "";
+  if (!window._state.user) return;
+  Object.entries(NAV_ITEMS).forEach(([key, item]) => {
+    if (!item.roles.includes(window._state.role)) return;
+    const btn = document.createElement("button");
+    btn.textContent = item.label;
+    btn.onclick = () => showView(key);
+    nav.appendChild(btn);
+  });
+  const logoutBtn = document.createElement("button");
+  logoutBtn.textContent = "Sair";
+  logoutBtn.onclick = () => auth.signOut();
+  nav.appendChild(logoutBtn);
+}
+
+window.showView = function (name) {
+  document.querySelectorAll("main > section").forEach((s) => s.classList.add("hidden"));
+  document.getElementById(`view-${name}`).classList.remove("hidden");
+  document.querySelectorAll("#mainNav button").forEach((b) => b.classList.remove("active"));
+  const idx = Object.keys(NAV_ITEMS).indexOf(name);
+  if (idx >= 0) document.querySelectorAll("#mainNav button")[idx]?.classList.add("active");
+  if (name === "app") loadTodayMeals();
+  if (name === "afiliado") loadAffiliatePanel();
+  if (name === "admin") loadAdminPanel();
+};
+
+// ---------- Login / cadastro ----------
+let isSignupMode = false;
+const params = new URLSearchParams(window.location.search);
+const refCode = params.get("ref");
+if (refCode) {
+  document.getElementById("refBox").classList.remove("hidden");
+  document.getElementById("refCodeShown").textContent = refCode;
+}
+
+window.toggleAuthMode = function (e) {
+  e.preventDefault();
+  isSignupMode = !isSignupMode;
+  document.getElementById("authTitle").textContent = isSignupMode ? "Criar conta" : "Entrar";
+  document.getElementById("authSubmitBtn").textContent = isSignupMode ? "Criar conta" : "Entrar";
+  document.getElementById("authToggleLink").textContent = isSignupMode
+    ? "Já tenho conta — entrar"
+    : "Ainda não tenho conta — criar cadastro";
+};
+
+window.handleAuthSubmit = async function () {
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+  const errEl = document.getElementById("authError");
+  errEl.textContent = "";
+  try {
+    if (isSignupMode) {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await setDoc(doc(db, "users", cred.user.uid), {
+        email,
+        role: "user",
+        referredByCode: refCode || null,
+        subscriptionStatus: "trial",
+        createdAt: serverTimestamp(),
+      });
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+  } catch (e) {
+    errEl.textContent = traduzErroFirebase(e.code);
+  }
+};
+
+function traduzErroFirebase(code) {
+  const map = {
+    "auth/email-already-in-use": "Esse e-mail já tem cadastro. Tente entrar.",
+    "auth/invalid-email": "E-mail inválido.",
+    "auth/weak-password": "Senha muito curta (mínimo 6 caracteres).",
+    "auth/wrong-password": "Senha incorreta.",
+    "auth/user-not-found": "Não encontramos essa conta.",
+    "auth/invalid-credential": "E-mail ou senha incorretos.",
+  };
+  return map[code] || "Não foi possível completar. Tente novamente.";
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window._state.user = null;
+    document.querySelectorAll("main > section").forEach((s) => s.classList.add("hidden"));
+    document.getElementById("view-login").classList.remove("hidden");
+    renderNav();
+    return;
+  }
+  window._state.user = user;
+  window._state.idToken = await user.getIdToken();
+
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+  window._state.role = userDoc.exists() ? userDoc.data().role || "user" : "user";
+
+  renderNav();
+  showView("app");
+  renderSubscriptionBanner(userDoc.exists() ? userDoc.data() : {});
+});
+
+// ---------- Assinatura / paywall ----------
+function renderSubscriptionBanner(userData) {
+  const banner = document.getElementById("subBanner");
+  const status = userData.subscriptionStatus || "trial";
+  if (status === "active") {
+    banner.innerHTML = `<span class="badge active">Assinatura ativa</span>`;
+  } else {
+    banner.innerHTML = `
+      <p style="margin:0 0 10px;">Você ainda não tem uma assinatura ativa.</p>
+      <button class="primary" onclick="startCheckout()">Assinar agora — R$ 29,90/mês</button>
+      <p class="error" id="checkoutError" style="margin-top:8px;"></p>
+    `;
+  }
+}
+
+window.startCheckout = async function () {
+  const errEl = document.getElementById("checkoutError");
+  try {
+    const res = await fetch("/api/create-checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "erro ao criar checkout");
+    window.location.href = data.checkoutUrl;
+  } catch (e) {
+    if (errEl) errEl.textContent = "Não foi possível iniciar o pagamento: " + e.message;
+  }
+};
+
+// ---------- Análise de foto ----------
+let selectedPhotoBase64 = null;
+let selectedPhotoMediaType = null;
+
+window.onPhotoSelected = function (event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  selectedPhotoMediaType = file.type;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = reader.result; // data:image/jpeg;base64,....
+    selectedPhotoBase64 = result.split(",")[1];
+    const img = document.getElementById("photoPreview");
+    img.src = result;
+    img.style.display = "block";
+    document.getElementById("analyzeBtn").disabled = false;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.analyzePhoto = async function () {
+  if (!selectedPhotoBase64) return;
+  const statusEl = document.getElementById("analyzeStatus");
+  const resultEl = document.getElementById("analyzeResult");
+  statusEl.textContent = "Analisando foto...";
+  resultEl.innerHTML = "";
+  try {
+    const res = await fetch("/api/analyze-photo", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      body: JSON.stringify({ imageBase64: selectedPhotoBase64, mediaType: selectedPhotoMediaType }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "erro ao analisar");
+
+    statusEl.textContent = "";
+    resultEl.innerHTML = `
+      <div class="card" style="background:#0d141b;">
+        <strong>${data.prato_identificado || "Prato identificado"}</strong>
+        <p class="muted">Confiança: ${data.confianca || "média"}</p>
+        <p>${data.calorias_totais || 0} kcal · P: ${data.proteinas_g || 0}g · C: ${data.carboidratos_g || 0}g · G: ${data.gorduras_g || 0}g</p>
+        <button class="primary" onclick='saveMeal(${JSON.stringify(data).replace(/'/g, "&apos;")})'>Salvar no diário</button>
+      </div>
+    `;
+  } catch (e) {
+    statusEl.textContent = "Erro: " + e.message;
+  }
+};
+
+window.saveMeal = async function (data) {
+  await addDoc(collection(db, "users", window._state.user.uid, "meals"), {
+    prato: data.prato_identificado || "Refeição",
+    calorias: data.calorias_totais || 0,
+    proteinas_g: data.proteinas_g || 0,
+    carboidratos_g: data.carboidratos_g || 0,
+    gorduras_g: data.gorduras_g || 0,
+    createdAt: serverTimestamp(),
+  });
+  document.getElementById("analyzeResult").innerHTML = `<p class="muted">Salvo no seu diário ✅</p>`;
+  document.getElementById("photoPreview").style.display = "none";
+  document.getElementById("analyzeBtn").disabled = true;
+  loadTodayMeals();
+};
+
+async function loadTodayMeals() {
+  if (!window._state.user) return;
+  const snap = await getDocs(
+    query(collection(db, "users", window._state.user.uid, "meals"), orderBy("createdAt", "desc"))
+  );
+  const tbody = document.querySelector("#mealsTable tbody");
+  tbody.innerHTML = "";
+  let total = 0;
+  const today = new Date().toDateString();
+  snap.forEach((docSnap) => {
+    const m = docSnap.data();
+    const when = m.createdAt?.toDate ? m.createdAt.toDate() : new Date();
+    if (when.toDateString() !== today) return;
+    total += m.calorias || 0;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${m.prato}</td><td>${m.calorias}</td><td>${when.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById("todayCalories").textContent = total;
+}
+
+// ---------- Painel do afiliado ----------
+async function loadAffiliatePanel() {
+  const uid = window._state.user.uid;
+  const affDoc = await getDoc(doc(db, "affiliates", uid));
+  const aff = affDoc.exists() ? affDoc.data() : { referralCode: "", totalEarned: 0 };
+
+  const link = `${window.location.origin}/?ref=${aff.referralCode}`;
+  document.getElementById("affiliateLink").value = link;
+
+  const referredSnap = await getDocs(query(collection(db, "users"), where("referredByCode", "==", aff.referralCode)));
+  let activeCount = 0;
+  referredSnap.forEach((d) => {
+    if (d.data().subscriptionStatus === "active") activeCount++;
+  });
+  document.getElementById("affTotalReferred").textContent = referredSnap.size;
+  document.getElementById("affTotalActive").textContent = activeCount;
+  document.getElementById("affTotalEarned").textContent = "R$ " + (aff.totalEarned || 0).toFixed(2);
+
+  const commSnap = await getDocs(query(collection(db, "commissions"), where("affiliateId", "==", uid)));
+  const tbody = document.querySelector("#commissionsTable tbody");
+  tbody.innerHTML = "";
+  commSnap.forEach((d) => {
+    const c = d.data();
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${c.period}</td><td>${c.userId.slice(0, 8)}...</td><td>R$ ${(c.baseAmount || 0).toFixed(2)}</td><td>R$ ${(c.commissionAmount || 0).toFixed(2)}</td><td>${c.status}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+window.copyAffiliateLink = function () {
+  const el = document.getElementById("affiliateLink");
+  el.select();
+  document.execCommand("copy");
+};
+
+// ---------- Painel admin ----------
+async function loadAdminPanel() {
+  const usersSnap = await getDocs(collection(db, "users"));
+  let activeCount = 0;
+  usersSnap.forEach((d) => {
+    if (d.data().subscriptionStatus === "active") activeCount++;
+  });
+  document.getElementById("adminTotalUsers").textContent = usersSnap.size;
+  document.getElementById("adminTotalActive").textContent = activeCount;
+
+  const paymentsSnap = await getDocs(collection(db, "payments"));
+  let revenue = 0;
+  paymentsSnap.forEach((d) => (revenue += d.data().amount || 0));
+  document.getElementById("adminTotalRevenue").textContent = "R$ " + revenue.toFixed(2);
+
+  const affSnap = await getDocs(collection(db, "affiliates"));
+  let totalCommissions = 0;
+  const tbody = document.querySelector("#adminAffiliatesTable tbody");
+  tbody.innerHTML = "";
+  for (const affDoc of affSnap.docs) {
+    const aff = affDoc.data();
+    totalCommissions += aff.totalEarned || 0;
+    const referredSnap = await getDocs(query(collection(db, "users"), where("referredByCode", "==", aff.referralCode)));
+    let activeReferred = 0;
+    referredSnap.forEach((d) => {
+      if (d.data().subscriptionStatus === "active") activeReferred++;
+    });
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${aff.name || affDoc.id.slice(0,8)}</td><td>${aff.referralCode}</td><td>${Math.round((aff.commissionRate||0)*100)}%</td><td>${activeReferred}</td><td>R$ ${(aff.totalEarned||0).toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  }
+  document.getElementById("adminTotalCommissions").textContent = "R$ " + totalCommissions.toFixed(2);
+}
+
+window.promoteUser = async function () {
+  const statusEl = document.getElementById("promoteStatus");
+  statusEl.textContent = "Aplicando...";
+  try {
+    const res = await fetch("/api/promote-role", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      body: JSON.stringify({
+        targetUid: document.getElementById("promoteUid").value.trim(),
+        role: document.getElementById("promoteRole").value,
+        name: document.getElementById("promoteName").value.trim(),
+        commissionRate: parseFloat(document.getElementById("promoteRate").value) || undefined,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "erro");
+    statusEl.textContent = "Feito! " + (data.referralCode ? `Código de afiliado: ${data.referralCode}` : "");
+    loadAdminPanel();
+  } catch (e) {
+    statusEl.textContent = "Erro: " + e.message;
+  }
+};
+</script>
+</body>
+</html>

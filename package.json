@@ -1,0 +1,9 @@
+{
+  "name": "calorias-ai-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App de contagem de calorias por foto (foco Brasil) com painel de afiliados e painel admin",
+  "dependencies": {
+    "firebase-admin": "^12.6.0"
+  }
+}
