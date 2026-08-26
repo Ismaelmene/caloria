@@ -202,11 +202,15 @@
     </div>
 
     <div id="subview-receita" class="hidden">
-      <label>Quantas calorias você quer consumir nessa refeição?</label>
+      <label>Quantas calorias você quer consumir?</label>
       <input id="recipeCalorias" type="number" placeholder="Ex: 500" />
-      <label>Quais ingredientes você já tem em casa? (separe por vírgula)</label>
-      <input id="recipeIngredientes" placeholder="Ex: arroz, ovo, tomate, cebola, frango" />
-      <button class="primary" onclick="generateRecipe()">Gerar sugestão de receita</button>
+      <button class="secondary" style="margin:-6px 0 14px;" onclick="usarRestanteDaMeta()">Usar quanto falta da minha meta hoje</button>
+
+      <label>Ingredientes que você já tem em casa (opcional)</label>
+      <input id="recipeIngredientes" placeholder="Deixe em branco para a IA montar a refeição do zero" />
+      <p class="muted" style="margin-top:-10px;">Se preencher, a IA monta a receita priorizando o que você já tem. Se deixar em branco, ela sugere uma refeição completa e diz o que comprar.</p>
+
+      <button class="primary" onclick="generateRecipe()">Gerar refeição com IA</button>
       <p class="muted" id="recipeStatus"></p>
       <div id="recipeResult"></div>
     </div>
@@ -214,6 +218,31 @@
     <h2 style="margin-top:24px;">Refeições de hoje</h2>
     <table id="mealsTable">
       <thead><tr><th>Prato</th><th>Kcal</th><th>Hora</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- ---------------- MEU PESO ---------------- -->
+  <section id="view-peso" class="card hidden">
+    <h2>Meu peso</h2>
+    <p class="muted">Registre seu peso a cada poucos dias para acompanhar sua evolução.</p>
+
+    <label>Peso atual (kg)</label>
+    <input id="weightInput" type="number" step="0.1" placeholder="Ex: 78.5" />
+    <button class="primary" onclick="registerWeight()">Registrar peso</button>
+    <p class="muted" id="weightStatus"></p>
+
+    <div class="stat-row" style="margin-top:20px;">
+      <div class="stat"><div class="value" id="weightCurrent">—</div><div class="label">peso atual</div></div>
+      <div class="stat"><div class="value" id="weightDelta10">—</div><div class="label">variação em 10 dias</div></div>
+      <div class="stat"><div class="value" id="weightDeltaTotal">—</div><div class="label">variação total</div></div>
+    </div>
+
+    <div id="weightChart" style="margin:16px 0;"></div>
+
+    <h2 style="margin-top:24px;">Histórico</h2>
+    <table id="weightTable">
+      <thead><tr><th>Data</th><th>Peso (kg)</th></tr></thead>
       <tbody></tbody>
     </table>
   </section>
@@ -304,6 +333,7 @@ window._state = { user: null, role: null, idToken: null };
 // ---------- Navegação ----------
 const NAV_ITEMS = {
   app: { label: "Meu diário", roles: ["user", "affiliate", "admin"] },
+  peso: { label: "Meu peso", roles: ["user", "affiliate", "admin"] },
   afiliado: { label: "Painel afiliado", roles: ["affiliate", "admin"] },
   admin: { label: "Painel admin", roles: ["admin"] },
 };
@@ -332,6 +362,7 @@ window.showView = function (name) {
   const idx = Object.keys(NAV_ITEMS).indexOf(name);
   if (idx >= 0) document.querySelectorAll("#mainNav button")[idx]?.classList.add("active");
   if (name === "app") loadTodayMeals();
+  if (name === "peso") loadWeightHistory();
   if (name === "afiliado") loadAffiliatePanel();
   if (name === "admin") loadAdminPanel();
 };
@@ -554,14 +585,21 @@ async function loadTodayMeals() {
 }
 
 // ---------- Sugestão de receita ----------
+window.usarRestanteDaMeta = function () {
+  const goal = window._state.dailyGoal || 2000;
+  const consumido = Number(document.getElementById("todayCalories").textContent) || 0;
+  const restante = Math.max(0, goal - consumido);
+  document.getElementById("recipeCalorias").value = restante;
+};
+
 window.generateRecipe = async function () {
   const calorias = document.getElementById("recipeCalorias").value.trim();
   const ingredientes = document.getElementById("recipeIngredientes").value.trim();
   const statusEl = document.getElementById("recipeStatus");
   const resultEl = document.getElementById("recipeResult");
 
-  if (!calorias || !ingredientes) {
-    statusEl.textContent = "Preencha as calorias desejadas e os ingredientes que você tem.";
+  if (!calorias) {
+    statusEl.textContent = "Preencha quantas calorias você quer consumir.";
     return;
   }
 
@@ -593,10 +631,9 @@ window.generateRecipe = async function () {
         <p class="muted">${data.descricao_breve || ""}</p>
         <p>${data.calorias_totais || 0} kcal · P: ${data.proteinas_g || 0}g · C: ${data.carboidratos_g || 0}g · G: ${data.gorduras_g || 0}g</p>
 
-        <p style="margin-bottom:4px;"><strong>O que você já tem:</strong></p>
-        <ul class="recipe-list">${temItens || "<li>—</li>"}</ul>
+        ${temItens ? `<p style="margin-bottom:4px;"><strong>O que você já tem:</strong></p><ul class="recipe-list">${temItens}</ul>` : ""}
 
-        ${comprarItens ? `<p style="margin-bottom:4px;"><strong>Vale comprar (opcional):</strong></p><ul class="recipe-list">${comprarItens}</ul>` : ""}
+        ${comprarItens ? `<p style="margin-bottom:4px;"><strong>${temItens ? "Vale comprar (opcional):" : "Lista de compras:"}</strong></p><ul class="recipe-list">${comprarItens}</ul>` : ""}
 
         <p style="margin-bottom:4px;"><strong>Modo de preparo:</strong></p>
         <ol class="recipe-steps">${passos || "<li>—</li>"}</ol>
@@ -614,6 +651,104 @@ window.generateRecipe = async function () {
     statusEl.textContent = "Erro: " + e.message;
   }
 };
+
+// ---------- Meu peso ----------
+window.registerWeight = async function () {
+  const value = Number(document.getElementById("weightInput").value);
+  const statusEl = document.getElementById("weightStatus");
+  if (!value || value <= 0) {
+    statusEl.textContent = "Digite um peso válido.";
+    return;
+  }
+  await addDoc(collection(db, "users", window._state.user.uid, "weights"), {
+    peso: value,
+    createdAt: serverTimestamp(),
+  });
+  document.getElementById("weightInput").value = "";
+  statusEl.textContent = "Peso registrado ✅";
+  loadWeightHistory();
+};
+
+function buildWeightChartSVG(entries) {
+  if (entries.length < 2) {
+    return `<p class="muted">Registre pelo menos 2 pesagens para ver o gráfico de evolução.</p>`;
+  }
+  const W = 600, H = 180, PAD = 24;
+  const pesos = entries.map((e) => e.peso);
+  const min = Math.min(...pesos) - 1;
+  const max = Math.max(...pesos) + 1;
+  const range = max - min || 1;
+  const stepX = (W - PAD * 2) / (entries.length - 1);
+
+  const points = entries.map((e, i) => {
+    const x = PAD + i * stepX;
+    const y = H - PAD - ((e.peso - min) / range) * (H - PAD * 2);
+    return { x, y, peso: e.peso };
+  });
+
+  const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
+  const circles = points
+    .map((p) => `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#3ecf8e" />`)
+    .join("");
+
+  return `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; background:#0d141b; border:1px solid #223140; border-radius:10px;">
+      <polyline points="${polyline}" fill="none" stroke="#3ecf8e" stroke-width="2" />
+      ${circles}
+    </svg>
+  `;
+}
+
+async function loadWeightHistory() {
+  if (!window._state.user) return;
+  const snap = await getDocs(
+    query(collection(db, "users", window._state.user.uid, "weights"), orderBy("createdAt", "asc"))
+  );
+  const entries = [];
+  snap.forEach((docSnap) => {
+    const d = docSnap.data();
+    const when = d.createdAt?.toDate ? d.createdAt.toDate() : new Date();
+    entries.push({ peso: d.peso, date: when });
+  });
+
+  const tbody = document.querySelector("#weightTable tbody");
+  tbody.innerHTML = "";
+  [...entries].reverse().forEach((e) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${e.date.toLocaleDateString("pt-BR")}</td><td>${e.peso} kg</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("weightChart").innerHTML = buildWeightChartSVG(entries);
+
+  if (entries.length === 0) {
+    document.getElementById("weightCurrent").textContent = "—";
+    document.getElementById("weightDelta10").textContent = "—";
+    document.getElementById("weightDeltaTotal").textContent = "—";
+    return;
+  }
+
+  const latest = entries[entries.length - 1];
+  document.getElementById("weightCurrent").textContent = latest.peso + " kg";
+
+  const first = entries[0];
+  const deltaTotal = latest.peso - first.peso;
+  document.getElementById("weightDeltaTotal").textContent =
+    (deltaTotal > 0 ? "+" : "") + deltaTotal.toFixed(1) + " kg";
+
+  const tenDaysAgo = new Date(latest.date.getTime() - 10 * 24 * 60 * 60 * 1000);
+  let reference = null;
+  for (const e of entries) {
+    if (e.date <= tenDaysAgo) reference = e;
+  }
+  if (reference) {
+    const delta10 = latest.peso - reference.peso;
+    document.getElementById("weightDelta10").textContent =
+      (delta10 > 0 ? "+" : "") + delta10.toFixed(1) + " kg";
+  } else {
+    document.getElementById("weightDelta10").textContent = "aguardando 10 dias de histórico";
+  }
+}
 
 // ---------- Painel do afiliado ----------
 async function loadAffiliatePanel() {
