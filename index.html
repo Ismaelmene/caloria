@@ -114,6 +114,31 @@
   .badge.inactive { background: rgba(255,107,107,0.15); color: var(--danger); }
   .hidden { display: none !important; }
   #photoPreview { max-width: 100%; border-radius: 10px; margin: 10px 0; display: none; }
+  .subtabs { display: flex; gap: 8px; margin: 18px 0 16px; flex-wrap: wrap; }
+  .subtab-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .subtab-btn.active { background: var(--accent); color: #04140c; border-color: var(--accent); }
+  .progress-track {
+    background: #0d141b;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    height: 10px;
+    overflow: hidden;
+    margin: 6px 0 4px;
+  }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+  .goal-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .goal-row input { width: 90px; margin: 0; padding: 4px 8px; }
+  ul.recipe-list { margin: 4px 0 12px; padding-left: 20px; font-size: 13px; }
+  ol.recipe-steps { margin: 4px 0 12px; padding-left: 20px; font-size: 13px; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -145,20 +170,48 @@
   <!-- ---------------- APP DO USUÁRIO ---------------- -->
   <section id="view-app" class="card hidden">
     <h2>Meu diário de hoje</h2>
-    <div id="subBanner" class="card" style="background:#0d141b;"></div>
 
-    <label>Foto do prato</label>
-    <input type="file" accept="image/*" capture="environment" id="photoInput" onchange="onPhotoSelected(event)" />
-    <img id="photoPreview" />
-    <button class="primary" id="analyzeBtn" onclick="analyzePhoto()" disabled>Analisar foto</button>
-    <p class="muted" id="analyzeStatus"></p>
-
-    <div id="analyzeResult"></div>
-
-    <h2 style="margin-top:24px;">Refeições de hoje</h2>
     <div class="stat-row">
       <div class="stat"><div class="value" id="todayCalories">0</div><div class="label">calorias hoje</div></div>
+      <div class="stat"><div class="value" id="todayProtein">0g</div><div class="label">proteínas</div></div>
+      <div class="stat"><div class="value" id="todayCarbs">0g</div><div class="label">carboidratos</div></div>
+      <div class="stat"><div class="value" id="todayFat">0g</div><div class="label">gorduras</div></div>
     </div>
+    <div class="progress-track"><div class="progress-fill" id="goalProgressFill" style="width:0%;"></div></div>
+    <div class="goal-row">
+      <span id="goalProgressLabel">0 de 2000 kcal</span>
+      <span style="flex:1;"></span>
+      <label for="dailyGoalInput" style="margin:0;">Meta diária:</label>
+      <input id="dailyGoalInput" type="number" value="2000" onchange="saveDailyGoal()" />
+    </div>
+
+    <div id="subBanner" class="card" style="background:#0d141b; margin-top:16px;"></div>
+
+    <div class="subtabs">
+      <button class="subtab-btn active" id="subtabRegistrarBtn" onclick="showSubTab('registrar')">📸 Registrar prato</button>
+      <button class="subtab-btn" id="subtabReceitaBtn" onclick="showSubTab('receita')">🍳 Sugestão de receita</button>
+    </div>
+
+    <div id="subview-registrar">
+      <label>Foto do prato</label>
+      <input type="file" accept="image/*" capture="environment" id="photoInput" onchange="onPhotoSelected(event)" />
+      <img id="photoPreview" />
+      <button class="primary" id="analyzeBtn" onclick="analyzePhoto()" disabled>Analisar foto</button>
+      <p class="muted" id="analyzeStatus"></p>
+      <div id="analyzeResult"></div>
+    </div>
+
+    <div id="subview-receita" class="hidden">
+      <label>Quantas calorias você quer consumir nessa refeição?</label>
+      <input id="recipeCalorias" type="number" placeholder="Ex: 500" />
+      <label>Quais ingredientes você já tem em casa? (separe por vírgula)</label>
+      <input id="recipeIngredientes" placeholder="Ex: arroz, ovo, tomate, cebola, frango" />
+      <button class="primary" onclick="generateRecipe()">Gerar sugestão de receita</button>
+      <p class="muted" id="recipeStatus"></p>
+      <div id="recipeResult"></div>
+    </div>
+
+    <h2 style="margin-top:24px;">Refeições de hoje</h2>
     <table id="mealsTable">
       <thead><tr><th>Prato</th><th>Kcal</th><th>Hora</th></tr></thead>
       <tbody></tbody>
@@ -350,11 +403,28 @@ onAuthStateChanged(auth, async (user) => {
 
   const userDoc = await getDoc(doc(db, "users", user.uid));
   window._state.role = userDoc.exists() ? userDoc.data().role || "user" : "user";
+  window._state.dailyGoal = userDoc.exists() && userDoc.data().dailyGoal ? userDoc.data().dailyGoal : 2000;
+  document.getElementById("dailyGoalInput").value = window._state.dailyGoal;
 
   renderNav();
   showView("app");
   renderSubscriptionBanner(userDoc.exists() ? userDoc.data() : {});
 });
+
+window.saveDailyGoal = async function () {
+  const value = Number(document.getElementById("dailyGoalInput").value) || 2000;
+  window._state.dailyGoal = value;
+  await setDoc(doc(db, "users", window._state.user.uid), { dailyGoal: value }, { merge: true });
+  loadTodayMeals();
+};
+
+// ---------- Sub-abas (registrar prato / sugestão de receita) ----------
+window.showSubTab = function (name) {
+  document.getElementById("subview-registrar").classList.toggle("hidden", name !== "registrar");
+  document.getElementById("subview-receita").classList.toggle("hidden", name !== "receita");
+  document.getElementById("subtabRegistrarBtn").classList.toggle("active", name === "registrar");
+  document.getElementById("subtabReceitaBtn").classList.toggle("active", name === "receita");
+};
 
 // ---------- Assinatura / paywall ----------
 function renderSubscriptionBanner(userData) {
@@ -457,19 +527,93 @@ async function loadTodayMeals() {
   );
   const tbody = document.querySelector("#mealsTable tbody");
   tbody.innerHTML = "";
-  let total = 0;
+  let total = 0, protein = 0, carbs = 0, fat = 0;
   const today = new Date().toDateString();
   snap.forEach((docSnap) => {
     const m = docSnap.data();
     const when = m.createdAt?.toDate ? m.createdAt.toDate() : new Date();
     if (when.toDateString() !== today) return;
     total += m.calorias || 0;
+    protein += m.proteinas_g || 0;
+    carbs += m.carboidratos_g || 0;
+    fat += m.gorduras_g || 0;
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${m.prato}</td><td>${m.calorias}</td><td>${when.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</td>`;
     tbody.appendChild(tr);
   });
   document.getElementById("todayCalories").textContent = total;
+  document.getElementById("todayProtein").textContent = protein.toFixed(0) + "g";
+  document.getElementById("todayCarbs").textContent = carbs.toFixed(0) + "g";
+  document.getElementById("todayFat").textContent = fat.toFixed(0) + "g";
+
+  const goal = window._state.dailyGoal || 2000;
+  const pct = Math.min(100, Math.round((total / goal) * 100));
+  document.getElementById("goalProgressFill").style.width = pct + "%";
+  document.getElementById("goalProgressFill").style.background = total > goal ? "var(--danger)" : "var(--accent)";
+  document.getElementById("goalProgressLabel").textContent = `${total} de ${goal} kcal`;
 }
+
+// ---------- Sugestão de receita ----------
+window.generateRecipe = async function () {
+  const calorias = document.getElementById("recipeCalorias").value.trim();
+  const ingredientes = document.getElementById("recipeIngredientes").value.trim();
+  const statusEl = document.getElementById("recipeStatus");
+  const resultEl = document.getElementById("recipeResult");
+
+  if (!calorias || !ingredientes) {
+    statusEl.textContent = "Preencha as calorias desejadas e os ingredientes que você tem.";
+    return;
+  }
+
+  statusEl.textContent = "Gerando sugestão...";
+  resultEl.innerHTML = "";
+
+  try {
+    const res = await fetch("/api/suggest-recipe", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      body: JSON.stringify({ caloriasDesejadas: calorias, ingredientesDisponiveis: ingredientes }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "erro ao gerar receita");
+
+    statusEl.textContent = "";
+
+    const temItens = (data.ingredientes_que_voce_tem || [])
+      .map((i) => `<li>${i.quantidade} de ${i.item}</li>`)
+      .join("");
+    const comprarItens = (data.ingredientes_para_comprar || [])
+      .map((i) => `<li><strong>${i.item}</strong> — ${i.motivo}</li>`)
+      .join("");
+    const passos = (data.modo_preparo || []).map((p) => `<li>${p}</li>`).join("");
+
+    resultEl.innerHTML = `
+      <div class="card" style="background:#0d141b;">
+        <strong>${data.nome_receita || "Receita sugerida"}</strong>
+        <p class="muted">${data.descricao_breve || ""}</p>
+        <p>${data.calorias_totais || 0} kcal · P: ${data.proteinas_g || 0}g · C: ${data.carboidratos_g || 0}g · G: ${data.gorduras_g || 0}g</p>
+
+        <p style="margin-bottom:4px;"><strong>O que você já tem:</strong></p>
+        <ul class="recipe-list">${temItens || "<li>—</li>"}</ul>
+
+        ${comprarItens ? `<p style="margin-bottom:4px;"><strong>Vale comprar (opcional):</strong></p><ul class="recipe-list">${comprarItens}</ul>` : ""}
+
+        <p style="margin-bottom:4px;"><strong>Modo de preparo:</strong></p>
+        <ol class="recipe-steps">${passos || "<li>—</li>"}</ol>
+
+        <button class="primary" onclick='saveMeal(${JSON.stringify({
+          prato_identificado: data.nome_receita,
+          calorias_totais: data.calorias_totais,
+          proteinas_g: data.proteinas_g,
+          carboidratos_g: data.carboidratos_g,
+          gorduras_g: data.gorduras_g,
+        }).replace(/'/g, "&apos;")})'>Salvar no diário</button>
+      </div>
+    `;
+  } catch (e) {
+    statusEl.textContent = "Erro: " + e.message;
+  }
+};
 
 // ---------- Painel do afiliado ----------
 async function loadAffiliatePanel() {
