@@ -1,5 +1,6 @@
 const { getAuthedUser } = require("../lib/firebaseAdmin");
 const { repairAndParseJSON } = require("../lib/jsonRepair");
+const { verificarSaldo, registrarGasto, ORCAMENTO_MENSAL_BRL } = require("../lib/budget");
 
 const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5";
 
@@ -124,6 +125,16 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: "ANTHROPIC_API_KEY não configurada no servidor" });
     }
 
+    const saldo = await verificarSaldo(user.uid);
+    if (!saldo.podeUsar) {
+      return res.status(402).json({
+        error: "limite_atingido",
+        mensagem: "Você atingiu seu limite mensal de IA. Compre créditos extras pra continuar gerando receitas.",
+        gasto: saldo.gasto,
+        orcamento: ORCAMENTO_MENSAL_BRL,
+      });
+    }
+
     const userMessage = temIngredientes
       ? `Quero ${duracaoInfo.diasEsperados > 1 ? "aproximadamente " + caloriasDesejadas + " calorias por dia" : "uma refeição de aproximadamente " + caloriasDesejadas + " calorias"}.
 Ingredientes que já tenho em casa: ${ingredientesDisponiveis}.
@@ -176,7 +187,12 @@ Não tenho ingredientes específicos em mente. Responda no formato JSON pedido.`
       });
     }
 
-    return res.status(200).json(foiReparado ? { ...parsed, avisoTruncado: true } : parsed);
+    const custo = await registrarGasto(saldo.ref, data.usage, saldo.usaraCredito);
+
+    const resultadoFinal = { ...parsed, usouCredito: saldo.usaraCredito, custo };
+    if (foiReparado) resultadoFinal.avisoTruncado = true;
+
+    return res.status(200).json(resultadoFinal);
   } catch (err) {
     console.error("Erro ao gerar receita:", err);
     return res.status(500).json({
