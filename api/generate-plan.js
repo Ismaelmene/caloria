@@ -1,5 +1,6 @@
 const { getAuthedUser } = require("../lib/firebaseAdmin");
 const { repairAndParseJSON } = require("../lib/jsonRepair");
+const { verificarSaldo, registrarGasto, ORCAMENTO_MENSAL_BRL } = require("../lib/budget");
 
 const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5";
 
@@ -197,6 +198,16 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: "ANTHROPIC_API_KEY não configurada no servidor" });
     }
 
+    const saldo = await verificarSaldo(user.uid);
+    if (!saldo.podeUsar) {
+      return res.status(402).json({
+        error: "limite_atingido",
+        mensagem: "Você atingiu seu limite mensal de IA. Compre créditos extras pra continuar gerando planos.",
+        gasto: saldo.gasto,
+        orcamento: ORCAMENTO_MENSAL_BRL,
+      });
+    }
+
     const objetivoFinal = objetivo === "perder" || objetivo === "ganhar" ? objetivo : "manter";
     const temIngredientes = Boolean(ingredientesDisponiveis && ingredientesDisponiveis.trim().length > 0);
 
@@ -271,6 +282,8 @@ A pessoa não tem ingredientes específicos em mente. Responda no formato JSON p
       dias: montarSemanaAPartirDasVariacoes(bruto.variacoes),
     };
 
+    const custo = await registrarGasto(saldo.ref, data.usage, saldo.usaraCredito);
+
     return res.status(200).json({
       bmr,
       tdee,
@@ -278,6 +291,8 @@ A pessoa não tem ingredientes específicos em mente. Responda no formato JSON p
       ajusteAplicado,
       plano,
       avisoTruncado: foiReparado || false,
+      usouCredito: saldo.usaraCredito,
+      custo,
     });
   } catch (err) {
     console.error("Erro ao gerar plano:", err);
