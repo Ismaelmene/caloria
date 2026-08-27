@@ -83,36 +83,48 @@ ${duracaoInfo.refeicoesPorDia} refeições.`;
 }
 
 module.exports = async (req, res) => {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "método não permitido" });
-  }
+  // tudo dentro de um único try/catch: qualquer erro inesperado (inclusive na
+  // autenticação) vira uma resposta JSON com detalhe, em vez de deixar a
+  // função "quebrar" e a Vercel devolver um 502 sem explicação nenhuma.
+  try {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "método não permitido" });
+    }
 
-  const user = await getAuthedUser(req);
-  if (!user) {
-    return res.status(401).json({ error: "não autenticado" });
-  }
+    let user;
+    try {
+      user = await getAuthedUser(req);
+    } catch (authErr) {
+      console.error("Erro na autenticação:", authErr);
+      return res.status(500).json({
+        error: "falha ao verificar login",
+        detalhe: String(authErr && authErr.message ? authErr.message : authErr).slice(0, 300),
+      });
+    }
+    if (!user) {
+      return res.status(401).json({ error: "não autenticado" });
+    }
 
-  const { caloriasDesejadas, ingredientesDisponiveis, duracao, objetivo } = req.body || {};
-  if (!caloriasDesejadas) {
-    return res.status(400).json({ error: "envie 'caloriasDesejadas'" });
-  }
+    const { caloriasDesejadas, ingredientesDisponiveis, duracao, objetivo } = req.body || {};
+    if (!caloriasDesejadas) {
+      return res.status(400).json({ error: "envie 'caloriasDesejadas'" });
+    }
 
-  const duracaoInfo = DURACAO_TEXTO[duracao] || DURACAO_TEXTO.refeicao;
-  const objetivoTexto = OBJETIVO_TEXTO[objetivo] || OBJETIVO_TEXTO.manter;
-  const temIngredientes = Boolean(ingredientesDisponiveis && ingredientesDisponiveis.trim().length > 0);
+    const duracaoInfo = DURACAO_TEXTO[duracao] || DURACAO_TEXTO.refeicao;
+    const objetivoTexto = OBJETIVO_TEXTO[objetivo] || OBJETIVO_TEXTO.manter;
+    const temIngredientes = Boolean(ingredientesDisponiveis && ingredientesDisponiveis.trim().length > 0);
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: "ANTHROPIC_API_KEY não configurada no servidor" });
-  }
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({ error: "ANTHROPIC_API_KEY não configurada no servidor" });
+    }
 
-  const userMessage = temIngredientes
-    ? `Quero ${duracaoInfo.diasEsperados > 1 ? "aproximadamente " + caloriasDesejadas + " calorias por dia" : "uma refeição de aproximadamente " + caloriasDesejadas + " calorias"}.
+    const userMessage = temIngredientes
+      ? `Quero ${duracaoInfo.diasEsperados > 1 ? "aproximadamente " + caloriasDesejadas + " calorias por dia" : "uma refeição de aproximadamente " + caloriasDesejadas + " calorias"}.
 Ingredientes que já tenho em casa: ${ingredientesDisponiveis}.
 Responda no formato JSON pedido.`
-    : `Quero ${duracaoInfo.diasEsperados > 1 ? "aproximadamente " + caloriasDesejadas + " calorias por dia" : "uma refeição de aproximadamente " + caloriasDesejadas + " calorias"}.
+      : `Quero ${duracaoInfo.diasEsperados > 1 ? "aproximadamente " + caloriasDesejadas + " calorias por dia" : "uma refeição de aproximadamente " + caloriasDesejadas + " calorias"}.
 Não tenho ingredientes específicos em mente. Responda no formato JSON pedido.`;
 
-  try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -130,8 +142,11 @@ Não tenho ingredientes específicos em mente. Responda no formato JSON pedido.`
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Erro Anthropic:", errText);
-      return res.status(502).json({ error: "falha ao consultar a IA" });
+      console.error("Erro Anthropic:", response.status, errText);
+      return res.status(502).json({
+        error: "falha ao consultar a IA",
+        detalhe: `status ${response.status}: ${errText}`.slice(0, 300),
+      });
     }
 
     const data = await response.json();
@@ -144,12 +159,24 @@ Não tenho ingredientes específicos em mente. Responda no formato JSON pedido.`
       parsed = JSON.parse(cleaned);
     } catch (e) {
       console.error("Não foi possível interpretar a resposta da IA:", rawText);
-      return res.status(502).json({ error: "resposta da IA em formato inesperado", raw: rawText });
+      return res.status(502).json({
+        error: "resposta da IA em formato inesperado",
+        detalhe: rawText.slice(0, 300),
+        raw: rawText,
+      });
     }
 
-    res.status(200).json(parsed);
+    return res.status(200).json(parsed);
   } catch (err) {
-    console.error("Erro ao gerar receita:", err.message);
-    res.status(500).json({ error: "erro interno ao gerar a receita" });
+    console.error("Erro ao gerar receita:", err);
+    return res.status(500).json({
+      error: "erro interno ao gerar a receita",
+      detalhe: String(err && err.message ? err.message : err).slice(0, 300),
+    });
   }
 };
+
+// dá mais tempo pra Vercel não matar a função antes da Claude terminar de
+// gerar cardápios grandes (semana/mês pedem bem mais texto que 1 refeição só).
+// No plano Hobby da Vercel o máximo permitido é 60s.
+module.exports.config = { maxDuration: 60 };
