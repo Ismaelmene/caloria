@@ -911,10 +911,15 @@ function renderRecipePlan(data) {
   const dias = data.dias || [];
   if (dias.length === 0) return `<p class="muted">Não foi possível montar nenhuma refeição.</p>`;
 
+  const avisoTruncado = data.avisoTruncado
+    ? `<p class="muted" style="color:var(--danger);">⚠️ A resposta veio maior do que o esperado e foi cortada — pode faltar algum dia ou refeição no fim do plano. Se quiser o plano completo, gere de novo.</p>`
+    : "";
+
   const header = `
     <div class="card" style="background:#0d141b;">
       <strong>${data.titulo || "Plano gerado"}</strong>
       <p class="muted">${data.resumo || ""}</p>
+      ${avisoTruncado}
     </div>
   `;
 
@@ -1171,6 +1176,7 @@ function renderPlanoResumo(ativo) {
       ${diasRestantes > 0 ? `Faltam ${diasRestantes} dia(s) para reavaliar` : "Hora de reavaliar!"} · Meta: ${ativo.caloriasCalculadas} kcal/dia
     </p>
     ${ativo.ajusteAplicado ? `<p class="muted">${ativo.ajusteAplicado}</p>` : ""}
+    ${ativo.avisoTruncado ? `<p class="muted" style="color:var(--danger);">⚠️ O cardápio veio maior que o esperado e foi cortado — pode faltar algum dia no fim. Se quiser, gere um novo ciclo.</p>` : ""}
   `;
 
   document.getElementById("planoCheckinBox").classList.toggle("hidden", diasRestantes > 0);
@@ -1252,6 +1258,7 @@ window.gerarPlano = async function () {
       tdee: data.tdee,
       ajusteAplicado: data.ajusteAplicado,
       plano: data.plano,
+      avisoTruncado: data.avisoTruncado || false,
       status: "ativo",
       pesoFinal: null,
       encerradoEm: null,
@@ -1333,6 +1340,7 @@ window.atualizarCiclo = async function () {
       tdee: data.tdee,
       ajusteAplicado: data.ajusteAplicado,
       plano: data.plano,
+      avisoTruncado: data.avisoTruncado || false,
       status: "ativo",
       pesoFinal: null,
       encerradoEm: null,
