@@ -1,4 +1,6 @@
 const { getAuthedUser } = require("../lib/firebaseAdmin");
+const { repairAndParseJSON } = require("../lib/jsonRepair");
+const { verificarSaldo, registrarGasto, ORCAMENTO_MENSAL_BRL } = require("../lib/budget");
 
 const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5";
 
@@ -25,25 +27,44 @@ Responda SOMENTE com um JSON válido, sem texto antes ou depois, no formato:
 }`;
 
 module.exports = async (req, res) => {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "método não permitido" });
-  }
-
-  const user = await getAuthedUser(req);
-  if (!user) {
-    return res.status(401).json({ error: "não autenticado" });
-  }
-
-  const { imageBase64, mediaType } = req.body || {};
-  if (!imageBase64) {
-    return res.status(400).json({ error: "envie 'imageBase64' (sem o prefixo data:...)" });
-  }
-
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: "ANTHROPIC_API_KEY não configurada no servidor" });
-  }
-
   try {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "método não permitido" });
+    }
+
+    let user;
+    try {
+      user = await getAuthedUser(req);
+    } catch (authErr) {
+      console.error("Erro na autenticação:", authErr);
+      return res.status(500).json({
+        error: "falha ao verificar login",
+        detalhe: String(authErr && authErr.message ? authErr.message : authErr).slice(0, 300),
+      });
+    }
+    if (!user) {
+      return res.status(401).json({ error: "não autenticado" });
+    }
+
+    const { imageBase64, mediaType } = req.body || {};
+    if (!imageBase64) {
+      return res.status(400).json({ error: "envie 'imageBase64' (sem o prefixo data:...)" });
+    }
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({ error: "ANTHROPIC_API_KEY não configurada no servidor" });
+    }
+
+    const saldo = await verificarSaldo(user.uid);
+    if (!saldo.podeUsar) {
+      return res.status(402).json({
+        error: "limite_atingido",
+        mensagem: "Você atingiu seu limite mensal de IA. Compre créditos extras pra continuar usando.",
+        gasto: saldo.gasto,
+        orcamento: ORCAMENTO_MENSAL_BRL,
+      });
+    }
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -79,8 +100,11 @@ module.exports = async (req, res) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Erro Anthropic:", errText);
-      return res.status(502).json({ error: "falha ao consultar a IA de visão" });
+      console.error("Erro Anthropic:", response.status, errText);
+      return res.status(502).json({
+        error: "falha ao consultar a IA de visão",
+        detalhe: `status ${response.status}: ${errText}`.slice(0, 300),
+      });
     }
 
     const data = await response.json();
@@ -89,17 +113,27 @@ module.exports = async (req, res) => {
 
     let parsed;
     try {
-      // remove eventuais blocos de markdown ```json ... ``` caso a IA os inclua
-      const cleaned = rawText.replace(/```json|```/g, "").trim();
-      parsed = JSON.parse(cleaned);
+      const resultado = repairAndParseJSON(rawText);
+      parsed = resultado.parsed;
     } catch (e) {
       console.error("Não foi possível interpretar a resposta da IA:", rawText);
-      return res.status(502).json({ error: "resposta da IA em formato inesperado", raw: rawText });
+      return res.status(502).json({
+        error: "resposta da IA em formato inesperado",
+        detalhe: "A resposta ficou grande demais e foi cortada no meio. Tente de novo.",
+        raw: rawText.slice(0, 500),
+      });
     }
 
-    res.status(200).json(parsed);
+    const custo = await registrarGasto(saldo.ref, data.usage, saldo.usaraCredito);
+
+    return res.status(200).json({ ...parsed, usouCredito: saldo.usaraCredito, custo });
   } catch (err) {
-    console.error("Erro ao analisar foto:", err.message);
-    res.status(500).json({ error: "erro interno ao analisar a foto" });
+    console.error("Erro ao analisar foto:", err);
+    return res.status(500).json({
+      error: "erro interno ao analisar a foto",
+      detalhe: String(err && err.message ? err.message : err).slice(0, 300),
+    });
   }
 };
+
+module.exports.config = { maxDuration: 30 };
