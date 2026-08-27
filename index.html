@@ -692,6 +692,17 @@ function traduzErroFirebase(code) {
   return map[code] || "Não foi possível completar. Tente novamente.";
 }
 
+// O token de login do Firebase expira depois de 1 hora. Se a gente guardasse só
+// o valor de quando a pessoa entrou, depois de 1h de app aberto toda chamada às
+// nossas funções (/api/...) passaria a dar 401 "não autenticado" — mesmo com a
+// pessoa ainda logada. Por isso, sempre que for chamar uma função, pedimos os
+// headers por aqui: o Firebase só busca um token novo de verdade se o antigo
+// estiver vencido ou perto de vencer, então isso não deixa nada mais lento.
+async function authHeaders() {
+  const token = window._state.user ? await window._state.user.getIdToken() : window._state.idToken;
+  return { "content-type": "application/json", Authorization: `Bearer ${token}` };
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window._state.user = null;
@@ -769,7 +780,7 @@ window.startCheckout = async function () {
   try {
     const res = await fetch("/api/create-checkout", {
       method: "POST",
-      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      headers: await authHeaders(),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "erro ao criar checkout");
@@ -808,7 +819,7 @@ window.analyzePhoto = async function () {
   try {
     const res = await fetch("/api/analyze-photo", {
       method: "POST",
-      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      headers: await authHeaders(),
       body: JSON.stringify({ imageBase64: selectedPhotoBase64, mediaType: selectedPhotoMediaType }),
     });
     const data = await res.json();
@@ -984,7 +995,7 @@ window.generateRecipe = async function (modo) {
   try {
     const res = await fetch("/api/suggest-recipe", {
       method: "POST",
-      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      headers: await authHeaders(),
       body: JSON.stringify({
         caloriasDesejadas: calorias,
         ingredientesDisponiveis: ingredientes,
@@ -1242,7 +1253,7 @@ window.gerarPlano = async function () {
   try {
     const res = await fetch("/api/generate-plan", {
       method: "POST",
-      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      headers: await authHeaders(),
       body: JSON.stringify({ pesoAtual: peso, alturaCm: altura, idade, sexo, nivelAtividade, objetivo, ingredientesDisponiveis }),
     });
     let data;
@@ -1309,7 +1320,7 @@ window.atualizarCiclo = async function () {
   try {
     const res = await fetch("/api/generate-plan", {
       method: "POST",
-      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      headers: await authHeaders(),
       body: JSON.stringify({
         pesoAtual: novoPeso,
         alturaCm: ativo.alturaCm,
@@ -1474,7 +1485,7 @@ window.promoteUser = async function () {
   try {
     const res = await fetch("/api/promote-role", {
       method: "POST",
-      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      headers: await authHeaders(),
       body: JSON.stringify({
         targetUid: document.getElementById("promoteUid").value.trim(),
         role: document.getElementById("promoteRole").value,
