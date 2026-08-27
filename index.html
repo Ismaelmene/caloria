@@ -36,18 +36,55 @@
     z-index: 10;
   }
   header h1 { font-size: 16px; margin: 0; font-weight: 700; }
-  nav { display: flex; gap: 6px; flex-wrap: wrap; }
-  nav button {
+  #menuBtn {
     background: transparent;
     border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 13px;
+    color: var(--text);
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #drawerOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+  }
+  #drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    max-width: 80vw;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    z-index: 101;
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  #drawer .drawer-title { font-weight: 700; font-size: 15px; margin: 4px 8px 14px; }
+  #drawer button {
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    padding: 10px 10px;
+    border-radius: 8px;
+    font-size: 14px;
     cursor: pointer;
   }
-  nav button.active { background: var(--accent); color: #04140c; border-color: var(--accent); font-weight: 600; }
-  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; }
+  #drawer button:hover { background: #0d141b; }
+  #drawer button.active { background: var(--accent); color: #04140c; font-weight: 700; }
+  #drawer button.logout { color: var(--danger); margin-top: auto; }
+  main { max-width: 480px; margin: 0 auto; padding: 16px 14px 60px; }
   .card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -139,14 +176,92 @@
   .goal-row input { width: 90px; margin: 0; padding: 4px 8px; }
   ul.recipe-list { margin: 4px 0 12px; padding-left: 20px; font-size: 13px; }
   ol.recipe-steps { margin: 4px 0 12px; padding-left: 20px; font-size: 13px; line-height: 1.6; }
+  .hero-card {
+    background: linear-gradient(180deg, #131a22, #0d141b);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+  .hero-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .hero-kcal { font-size: 28px; font-weight: 800; }
+  .hero-kcal-of { font-size: 13px; color: var(--muted); }
+  .macro-row { display: flex; gap: 8px; margin-top: 14px; }
+  .macro-pill {
+    flex: 1;
+    background: #0d141b;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 6px;
+    text-align: center;
+  }
+  .macro-pill .v { font-size: 15px; font-weight: 700; }
+  .macro-pill .l { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 0; }
+  .chip {
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .chip.active { background: var(--accent); color: #04140c; border-color: var(--accent); font-weight: 700; }
+  .option-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    background: #0d141b;
+  }
+  .option-card h3 { margin: 0 0 4px; font-size: 15px; }
+  .option-card .desc { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  details.day-accordion {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  details.day-accordion summary {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    list-style: none;
+  }
+  details.day-accordion summary::-webkit-details-marker { display: none; }
+  details.day-accordion .day-body { padding: 0 12px 12px; }
+  .meal-card {
+    background: #131a22;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+  }
 </style>
 </head>
 <body>
 
 <header>
+  <button id="menuBtn" onclick="openDrawer()">☰</button>
   <h1>Calorias por Foto 🇧🇷</h1>
-  <nav id="mainNav"></nav>
+  <span style="width:38px;"></span>
 </header>
+
+<div id="drawerOverlay" class="hidden" onclick="closeDrawer()"></div>
+<div id="drawer" class="hidden">
+  <div class="drawer-title">Menu</div>
+  <div id="drawerNav"></div>
+</div>
 
 <main>
 
@@ -168,31 +283,45 @@
   </section>
 
   <!-- ---------------- APP DO USUÁRIO ---------------- -->
-  <section id="view-app" class="card hidden">
-    <h2>Meu diário de hoje</h2>
+  <section id="view-app" class="card hidden" style="background:transparent; border:none; padding:0;">
 
-    <div class="stat-row">
-      <div class="stat"><div class="value" id="todayCalories">0</div><div class="label">calorias hoje</div></div>
-      <div class="stat"><div class="value" id="todayProtein">0g</div><div class="label">proteínas</div></div>
-      <div class="stat"><div class="value" id="todayCarbs">0g</div><div class="label">carboidratos</div></div>
-      <div class="stat"><div class="value" id="todayFat">0g</div><div class="label">gorduras</div></div>
-    </div>
-    <div class="progress-track"><div class="progress-fill" id="goalProgressFill" style="width:0%;"></div></div>
-    <div class="goal-row">
-      <span id="goalProgressLabel">0 de 2000 kcal</span>
-      <span style="flex:1;"></span>
-      <label for="dailyGoalInput" style="margin:0;">Meta diária:</label>
-      <input id="dailyGoalInput" type="number" value="2000" onchange="saveDailyGoal()" />
+    <div class="hero-card">
+      <div class="hero-top">
+        <div>
+          <div class="hero-kcal"><span id="todayCalories">0</span> kcal</div>
+          <div class="hero-kcal-of">de <span id="goalKcalLabel">2000</span> kcal · <span id="goalRemainingLabel">restam 2000</span></div>
+        </div>
+        <button class="link-btn" onclick="openMetaEditor()">Editar meta</button>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="goalProgressFill" style="width:0%;"></div></div>
+
+      <div class="macro-row">
+        <div class="macro-pill"><div class="v" id="todayProtein">0g</div><div class="l">Proteína</div></div>
+        <div class="macro-pill"><div class="v" id="todayCarbs">0g</div><div class="l">Carbo</div></div>
+        <div class="macro-pill"><div class="v" id="todayFat">0g</div><div class="l">Gordura</div></div>
+      </div>
+
+      <div id="metaEditor" class="hidden" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+        <label>Meta diária de calorias</label>
+        <input id="dailyGoalInput" type="number" value="2000" />
+        <label>Seu objetivo</label>
+        <div class="chip-row" id="objetivoChips">
+          <button type="button" class="chip" data-obj="perder">Perder peso</button>
+          <button type="button" class="chip" data-obj="manter">Manter peso</button>
+          <button type="button" class="chip" data-obj="ganhar">Ganhar peso</button>
+        </div>
+        <button class="primary" style="margin-top:12px;" onclick="saveDailyGoal()">Salvar</button>
+      </div>
     </div>
 
-    <div id="subBanner" class="card" style="background:#0d141b; margin-top:16px;"></div>
+    <div id="subBanner" class="card" style="background:#0d141b;"></div>
 
     <div class="subtabs">
       <button class="subtab-btn active" id="subtabRegistrarBtn" onclick="showSubTab('registrar')">📸 Registrar prato</button>
-      <button class="subtab-btn" id="subtabReceitaBtn" onclick="showSubTab('receita')">🍳 Sugestão de receita</button>
+      <button class="subtab-btn" id="subtabReceitaBtn" onclick="showSubTab('receita')">🍳 Receitas com IA</button>
     </div>
 
-    <div id="subview-registrar">
+    <div id="subview-registrar" class="card">
       <label>Foto do prato</label>
       <input type="file" accept="image/*" capture="environment" id="photoInput" onchange="onPhotoSelected(event)" />
       <img id="photoPreview" />
@@ -202,15 +331,48 @@
     </div>
 
     <div id="subview-receita" class="hidden">
-      <label>Quantas calorias você quer consumir?</label>
-      <input id="recipeCalorias" type="number" placeholder="Ex: 500" />
-      <button class="secondary" style="margin:-6px 0 14px;" onclick="usarRestanteDaMeta()">Usar quanto falta da minha meta hoje</button>
 
-      <label>Ingredientes que você já tem em casa (opcional)</label>
-      <input id="recipeIngredientes" placeholder="Deixe em branco para a IA montar a refeição do zero" />
-      <p class="muted" style="margin-top:-10px;">Se preencher, a IA monta a receita priorizando o que você já tem. Se deixar em branco, ela sugere uma refeição completa e diz o que comprar.</p>
+      <div class="option-card">
+        <h3>🧊 Opção 1 — Tenho estes ingredientes em casa</h3>
+        <div class="desc">A IA monta a receita priorizando o que você já tem.</div>
 
-      <button class="primary" onclick="generateRecipe()">Gerar refeição com IA</button>
+        <label>Ingredientes que você tem (separe por vírgula)</label>
+        <input id="recipeIngredientes" placeholder="Ex: arroz, ovo, tomate, frango" />
+
+        <label>Calorias desejadas</label>
+        <input id="recipeCaloriasIngr" type="number" placeholder="Ex: 500" />
+        <button class="secondary" style="margin:-6px 0 14px;" onclick="usarRestanteDaMeta('recipeCaloriasIngr')">Usar quanto falta da minha meta hoje</button>
+
+        <label>Para quando é essa receita?</label>
+        <div class="chip-row" id="duracaoChipsIngr">
+          <button type="button" class="chip active" data-dur="refeicao">Só essa refeição</button>
+          <button type="button" class="chip" data-dur="dia">O dia inteiro</button>
+          <button type="button" class="chip" data-dur="semana">A semana</button>
+          <button type="button" class="chip" data-dur="mes">O mês</button>
+        </div>
+
+        <button class="primary" style="margin-top:12px;" onclick="generateRecipe('ingredientes')">Gerar com meus ingredientes</button>
+      </div>
+
+      <div class="option-card">
+        <h3>✨ Opção 2 — Só quero informar as calorias</h3>
+        <div class="desc">A IA cria a refeição do zero e te diz o que comprar.</div>
+
+        <label>Calorias desejadas</label>
+        <input id="recipeCaloriasLivre" type="number" placeholder="Ex: 500" />
+        <button class="secondary" style="margin:-6px 0 14px;" onclick="usarRestanteDaMeta('recipeCaloriasLivre')">Usar quanto falta da minha meta hoje</button>
+
+        <label>Para quando é essa receita?</label>
+        <div class="chip-row" id="duracaoChipsLivre">
+          <button type="button" class="chip active" data-dur="refeicao">Só essa refeição</button>
+          <button type="button" class="chip" data-dur="dia">O dia inteiro</button>
+          <button type="button" class="chip" data-dur="semana">A semana</button>
+          <button type="button" class="chip" data-dur="mes">O mês</button>
+        </div>
+
+        <button class="primary" style="margin-top:12px;" onclick="generateRecipe('livre')">Gerar do zero</button>
+      </div>
+
       <p class="muted" id="recipeStatus"></p>
       <div id="recipeResult"></div>
     </div>
@@ -339,28 +501,39 @@ const NAV_ITEMS = {
 };
 
 function renderNav() {
-  const nav = document.getElementById("mainNav");
+  const nav = document.getElementById("drawerNav");
   nav.innerHTML = "";
   if (!window._state.user) return;
   Object.entries(NAV_ITEMS).forEach(([key, item]) => {
     if (!item.roles.includes(window._state.role)) return;
     const btn = document.createElement("button");
     btn.textContent = item.label;
+    btn.dataset.navKey = key;
     btn.onclick = () => showView(key);
     nav.appendChild(btn);
   });
   const logoutBtn = document.createElement("button");
   logoutBtn.textContent = "Sair";
+  logoutBtn.className = "logout";
   logoutBtn.onclick = () => auth.signOut();
   nav.appendChild(logoutBtn);
 }
 
+window.openDrawer = function () {
+  document.getElementById("drawerOverlay").classList.remove("hidden");
+  document.getElementById("drawer").classList.remove("hidden");
+};
+window.closeDrawer = function () {
+  document.getElementById("drawerOverlay").classList.add("hidden");
+  document.getElementById("drawer").classList.add("hidden");
+};
+
 window.showView = function (name) {
   document.querySelectorAll("main > section").forEach((s) => s.classList.add("hidden"));
   document.getElementById(`view-${name}`).classList.remove("hidden");
-  document.querySelectorAll("#mainNav button").forEach((b) => b.classList.remove("active"));
-  const idx = Object.keys(NAV_ITEMS).indexOf(name);
-  if (idx >= 0) document.querySelectorAll("#mainNav button")[idx]?.classList.add("active");
+  document.querySelectorAll("#drawerNav button").forEach((b) => b.classList.remove("active"));
+  document.querySelector(`#drawerNav button[data-nav-key="${name}"]`)?.classList.add("active");
+  closeDrawer();
   if (name === "app") loadTodayMeals();
   if (name === "peso") loadWeightHistory();
   if (name === "afiliado") loadAffiliatePanel();
@@ -435,21 +608,49 @@ onAuthStateChanged(auth, async (user) => {
   const userDoc = await getDoc(doc(db, "users", user.uid));
   window._state.role = userDoc.exists() ? userDoc.data().role || "user" : "user";
   window._state.dailyGoal = userDoc.exists() && userDoc.data().dailyGoal ? userDoc.data().dailyGoal : 2000;
+  window._state.objetivo = userDoc.exists() && userDoc.data().objetivo ? userDoc.data().objetivo : "manter";
   document.getElementById("dailyGoalInput").value = window._state.dailyGoal;
+  setActiveChip("objetivoChips", window._state.objetivo);
 
   renderNav();
   showView("app");
   renderSubscriptionBanner(userDoc.exists() ? userDoc.data() : {});
 });
 
+// ---------- Chips reutilizáveis (objetivo / duração) ----------
+function setActiveChip(containerId, value) {
+  document.querySelectorAll(`#${containerId} .chip`).forEach((btn) => {
+    const key = btn.dataset.obj || btn.dataset.dur;
+    btn.classList.toggle("active", key === value);
+  });
+}
+function getActiveChip(containerId) {
+  const active = document.querySelector(`#${containerId} .chip.active`);
+  return active ? active.dataset.obj || active.dataset.dur : null;
+}
+document.addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  const container = chip.parentElement;
+  container.querySelectorAll(".chip").forEach((b) => b.classList.remove("active"));
+  chip.classList.add("active");
+});
+
+window.openMetaEditor = function () {
+  document.getElementById("metaEditor").classList.toggle("hidden");
+};
+
 window.saveDailyGoal = async function () {
   const value = Number(document.getElementById("dailyGoalInput").value) || 2000;
+  const objetivo = getActiveChip("objetivoChips") || "manter";
   window._state.dailyGoal = value;
-  await setDoc(doc(db, "users", window._state.user.uid), { dailyGoal: value }, { merge: true });
+  window._state.objetivo = objetivo;
+  await setDoc(doc(db, "users", window._state.user.uid), { dailyGoal: value, objetivo }, { merge: true });
+  document.getElementById("metaEditor").classList.add("hidden");
   loadTodayMeals();
 };
 
-// ---------- Sub-abas (registrar prato / sugestão de receita) ----------
+// ---------- Sub-abas (registrar prato / receitas com IA) ----------
 window.showSubTab = function (name) {
   document.getElementById("subview-registrar").classList.toggle("hidden", name !== "registrar");
   document.getElementById("subview-receita").classList.toggle("hidden", name !== "receita");
@@ -581,20 +782,88 @@ async function loadTodayMeals() {
   const pct = Math.min(100, Math.round((total / goal) * 100));
   document.getElementById("goalProgressFill").style.width = pct + "%";
   document.getElementById("goalProgressFill").style.background = total > goal ? "var(--danger)" : "var(--accent)";
-  document.getElementById("goalProgressLabel").textContent = `${total} de ${goal} kcal`;
+  document.getElementById("goalKcalLabel").textContent = goal;
+  const restante = goal - total;
+  document.getElementById("goalRemainingLabel").textContent =
+    restante >= 0 ? `restam ${restante}` : `${Math.abs(restante)} acima da meta`;
 }
 
-// ---------- Sugestão de receita ----------
-window.usarRestanteDaMeta = function () {
+// ---------- Receitas com IA ----------
+window.usarRestanteDaMeta = function (targetInputId) {
   const goal = window._state.dailyGoal || 2000;
   const consumido = Number(document.getElementById("todayCalories").textContent) || 0;
   const restante = Math.max(0, goal - consumido);
-  document.getElementById("recipeCalorias").value = restante;
+  document.getElementById(targetInputId).value = restante;
 };
 
-window.generateRecipe = async function () {
-  const calorias = document.getElementById("recipeCalorias").value.trim();
-  const ingredientes = document.getElementById("recipeIngredientes").value.trim();
+function renderMealCard(refeicao) {
+  const temItens = (refeicao.ingredientes_que_voce_tem || [])
+    .map((i) => `<li>${i.quantidade} de ${i.item}</li>`)
+    .join("");
+  const comprarItens = (refeicao.ingredientes_para_comprar || [])
+    .map((i) => `<li><strong>${i.item}</strong>${i.motivo ? " — " + i.motivo : ""}</li>`)
+    .join("");
+  const passos = (refeicao.modo_preparo || []).map((p) => `<li>${p}</li>`).join("");
+  const mealData = {
+    prato_identificado: refeicao.prato,
+    calorias_totais: refeicao.calorias,
+    proteinas_g: refeicao.proteinas_g,
+    carboidratos_g: refeicao.carboidratos_g,
+    gorduras_g: refeicao.gorduras_g,
+  };
+
+  return `
+    <div class="meal-card">
+      <strong>${refeicao.nome_refeicao ? refeicao.nome_refeicao + " — " : ""}${refeicao.prato || "Refeição"}</strong>
+      <p>${refeicao.calorias || 0} kcal · P: ${refeicao.proteinas_g || 0}g · C: ${refeicao.carboidratos_g || 0}g · G: ${refeicao.gorduras_g || 0}g</p>
+      ${temItens ? `<p style="margin-bottom:4px;"><strong>O que você já tem:</strong></p><ul class="recipe-list">${temItens}</ul>` : ""}
+      ${comprarItens ? `<p style="margin-bottom:4px;"><strong>${temItens ? "Vale comprar:" : "Lista de compras:"}</strong></p><ul class="recipe-list">${comprarItens}</ul>` : ""}
+      ${passos ? `<p style="margin-bottom:4px;"><strong>Modo de preparo:</strong></p><ol class="recipe-steps">${passos}</ol>` : ""}
+      <button class="primary" onclick='saveMeal(${JSON.stringify(mealData).replace(/'/g, "&apos;")})'>Salvar no diário</button>
+    </div>
+  `;
+}
+
+function renderRecipePlan(data) {
+  const dias = data.dias || [];
+  if (dias.length === 0) return `<p class="muted">A IA não retornou nenhuma refeição.</p>`;
+
+  const header = `
+    <div class="card" style="background:#0d141b;">
+      <strong>${data.titulo || "Plano gerado"}</strong>
+      <p class="muted">${data.resumo || ""}</p>
+    </div>
+  `;
+
+  if (dias.length === 1) {
+    // uma refeição única ou um dia inteiro — mostra tudo aberto
+    return header + dias[0].refeicoes.map(renderMealCard).join("");
+  }
+
+  // semana ou mês (representado como uma semana-modelo) — usa sanfona por dia
+  const accordions = dias
+    .map((d, i) => {
+      const totalDia = (d.refeicoes || []).reduce((s, r) => s + (r.calorias || 0), 0);
+      return `
+        <details class="day-accordion" ${i === 0 ? "open" : ""}>
+          <summary>${d.dia || "Dia " + (i + 1)} — ${totalDia} kcal</summary>
+          <div class="day-body">${(d.refeicoes || []).map(renderMealCard).join("")}</div>
+        </details>
+      `;
+    })
+    .join("");
+
+  return header + accordions;
+}
+
+window.generateRecipe = async function (modo) {
+  const isIngr = modo === "ingredientes";
+  const caloriasInputId = isIngr ? "recipeCaloriasIngr" : "recipeCaloriasLivre";
+  const duracaoChipsId = isIngr ? "duracaoChipsIngr" : "duracaoChipsLivre";
+
+  const calorias = document.getElementById(caloriasInputId).value.trim();
+  const ingredientes = isIngr ? document.getElementById("recipeIngredientes").value.trim() : "";
+  const duracao = getActiveChip(duracaoChipsId) || "refeicao";
   const statusEl = document.getElementById("recipeStatus");
   const resultEl = document.getElementById("recipeResult");
 
@@ -602,51 +871,36 @@ window.generateRecipe = async function () {
     statusEl.textContent = "Preencha quantas calorias você quer consumir.";
     return;
   }
+  if (isIngr && !ingredientes) {
+    statusEl.textContent = "Liste ao menos um ingrediente, ou use a Opção 2 para a IA criar do zero.";
+    return;
+  }
 
-  statusEl.textContent = "Gerando sugestão...";
+  const mensagensEspera = {
+    refeicao: "Gerando sua refeição...",
+    dia: "Montando o cardápio do dia...",
+    semana: "Montando o cardápio da semana (pode levar um minuto)...",
+    mes: "Montando um cardápio modelo pro mês (pode levar um minuto)...",
+  };
+  statusEl.textContent = mensagensEspera[duracao] || "Gerando...";
   resultEl.innerHTML = "";
 
   try {
     const res = await fetch("/api/suggest-recipe", {
       method: "POST",
       headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
-      body: JSON.stringify({ caloriasDesejadas: calorias, ingredientesDisponiveis: ingredientes }),
+      body: JSON.stringify({
+        caloriasDesejadas: calorias,
+        ingredientesDisponiveis: ingredientes,
+        duracao,
+        objetivo: window._state.objetivo || "manter",
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "erro ao gerar receita");
 
     statusEl.textContent = "";
-
-    const temItens = (data.ingredientes_que_voce_tem || [])
-      .map((i) => `<li>${i.quantidade} de ${i.item}</li>`)
-      .join("");
-    const comprarItens = (data.ingredientes_para_comprar || [])
-      .map((i) => `<li><strong>${i.item}</strong> — ${i.motivo}</li>`)
-      .join("");
-    const passos = (data.modo_preparo || []).map((p) => `<li>${p}</li>`).join("");
-
-    resultEl.innerHTML = `
-      <div class="card" style="background:#0d141b;">
-        <strong>${data.nome_receita || "Receita sugerida"}</strong>
-        <p class="muted">${data.descricao_breve || ""}</p>
-        <p>${data.calorias_totais || 0} kcal · P: ${data.proteinas_g || 0}g · C: ${data.carboidratos_g || 0}g · G: ${data.gorduras_g || 0}g</p>
-
-        ${temItens ? `<p style="margin-bottom:4px;"><strong>O que você já tem:</strong></p><ul class="recipe-list">${temItens}</ul>` : ""}
-
-        ${comprarItens ? `<p style="margin-bottom:4px;"><strong>${temItens ? "Vale comprar (opcional):" : "Lista de compras:"}</strong></p><ul class="recipe-list">${comprarItens}</ul>` : ""}
-
-        <p style="margin-bottom:4px;"><strong>Modo de preparo:</strong></p>
-        <ol class="recipe-steps">${passos || "<li>—</li>"}</ol>
-
-        <button class="primary" onclick='saveMeal(${JSON.stringify({
-          prato_identificado: data.nome_receita,
-          calorias_totais: data.calorias_totais,
-          proteinas_g: data.proteinas_g,
-          carboidratos_g: data.carboidratos_g,
-          gorduras_g: data.gorduras_g,
-        }).replace(/'/g, "&apos;")})'>Salvar no diário</button>
-      </div>
-    `;
+    resultEl.innerHTML = renderRecipePlan(data);
   } catch (e) {
     statusEl.textContent = "Erro: " + e.message;
   }
