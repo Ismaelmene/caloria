@@ -83,18 +83,56 @@ function avaliarProgresso(cicloAnterior, calorias, objetivo) {
   };
 }
 
-function buildSystemPrompt(caloriasAlvo, objetivoTexto) {
+const DIAS_SEMANA = [
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+  "Domingo",
+];
+
+// Em vez de pedir 7 dias 100% diferentes pra IA (o que deixa a resposta enorme
+// e mais fácil de cortar no meio), pedimos só 3 cardápios-modelo diferentes e
+// alternamos eles ao longo dos 7 dias da semana — a pessoa não come a mesma
+// coisa todo dia, mas também não cansa de tantas receitas novas de uma vez.
+function montarSemanaAPartirDasVariacoes(variacoes) {
+  if (!Array.isArray(variacoes) || variacoes.length === 0) return [];
+  return DIAS_SEMANA.map((diaNome, i) => {
+    const variacao = variacoes[i % variacoes.length] || {};
+    return {
+      dia: diaNome,
+      refeicoes: (variacao.refeicoes || []).map((r) => ({ ...r })),
+    };
+  });
+}
+
+function buildSystemPrompt(caloriasAlvo, objetivoTexto, temIngredientes) {
   return `Você é um nutricionista especializado em culinária BRASILEIRA e usa a TACO
 (Tabela Brasileira de Composição de Alimentos) como referência nutricional — não use
 bases de dados americanas.
 
 ${objetivoTexto}
 
-Monte um cardápio-modelo de 7 dias (segunda a domingo), pensado para a pessoa repetir
-e variar ao longo de um ciclo de 15 dias, com 4 refeições por dia: café da manhã,
-almoço, lanche da tarde e jantar. A soma diária de calorias deve ficar próxima de
-${caloriasAlvo} kcal por dia. Varie os pratos ao longo da semana para não repetir
-sempre a mesma coisa, priorizando alimentos comuns e acessíveis no Brasil.
+Monte exatamente 3 cardápios-modelo DIFERENTES entre si (chame-os de "Opção A",
+"Opção B" e "Opção C"), cada um com 4 refeições: café da manhã, almoço, lanche da
+tarde e jantar. Esses 3 cardápios vão se alternar ao longo dos próximos 15 dias —
+a ideia é dar variedade real (pratos, proteínas e modos de preparo diferentes em
+cada opção) sem precisar inventar 7 cardápios diferentes, porque senão a pessoa
+cansa de tanta coisa nova. A soma diária de calorias de CADA uma das 3 opções deve
+ficar próxima de ${caloriasAlvo} kcal, priorizando alimentos comuns e acessíveis no
+Brasil.
+
+${
+  temIngredientes
+    ? `A pessoa te disse quais ingredientes já tem em casa — priorize usá-los ao
+máximo nos 3 cardápios. O que faltar para completar as receitas, liste em
+"ingredientes_para_comprar" de cada refeição.`
+    : `A pessoa não tem ingredientes específicos em mente — monte os cardápios do
+zero e liste TODOS os ingredientes necessários em "ingredientes_para_comprar" de
+cada refeição (deixe "ingredientes_que_voce_tem" vazio em cada uma).`
+}
 
 Seja DIRETO E CONCISO em cada campo — isso é importante pra resposta inteira
 caber no limite de tamanho: "resumo" com no máximo 1-2 frases curtas; "modo_preparo"
@@ -105,9 +143,9 @@ Responda SOMENTE com um JSON válido, sem texto antes ou depois, no formato exat
 {
   "titulo": "string curta",
   "resumo": "string curta explicando o plano",
-  "dias": [
+  "variacoes": [
     {
-      "dia": "string (ex: 'Segunda-feira', 'Terça-feira'...)",
+      "nome": "string (ex: 'Opção A')",
       "refeicoes": [
         {
           "nome_refeicao": "string (ex: 'Café da manhã', 'Almoço', 'Lanche da tarde', 'Jantar')",
@@ -116,7 +154,7 @@ Responda SOMENTE com um JSON válido, sem texto antes ou depois, no formato exat
           "proteinas_g": number,
           "carboidratos_g": number,
           "gorduras_g": number,
-          "ingredientes_que_voce_tem": [],
+          "ingredientes_que_voce_tem": [{"item": "string", "quantidade": "string"}],
           "ingredientes_para_comprar": [{"item": "string", "motivo": "string"}],
           "modo_preparo": ["passo 1", "passo 2"]
         }
@@ -125,7 +163,7 @@ Responda SOMENTE com um JSON válido, sem texto antes ou depois, no formato exat
   ]
 }
 
-Gere exatamente 7 itens em "dias", cada um com 4 refeições.`;
+Gere exatamente 3 itens em "variacoes", cada um com 4 refeições.`;
 }
 
 module.exports = async (req, res) => {
@@ -148,7 +186,8 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: "não autenticado" });
     }
 
-    const { pesoAtual, alturaCm, idade, sexo, nivelAtividade, objetivo, cicloAnterior } = req.body || {};
+    const { pesoAtual, alturaCm, idade, sexo, nivelAtividade, objetivo, cicloAnterior, ingredientesDisponiveis } =
+      req.body || {};
 
     if (!pesoAtual || !alturaCm || !idade || !sexo) {
       return res.status(400).json({ error: "envie 'pesoAtual', 'alturaCm', 'idade' e 'sexo'" });
@@ -159,6 +198,7 @@ module.exports = async (req, res) => {
     }
 
     const objetivoFinal = objetivo === "perder" || objetivo === "ganhar" ? objetivo : "manter";
+    const temIngredientes = Boolean(ingredientesDisponiveis && ingredientesDisponiveis.trim().length > 0);
 
     const { bmr, tdee, calorias: caloriasBase } = calcularCalorias({
       pesoAtual: Number(pesoAtual),
@@ -172,6 +212,13 @@ module.exports = async (req, res) => {
     const { calorias, ajusteAplicado } = avaliarProgresso(cicloAnterior, caloriasBase, objetivoFinal);
     const objetivoTexto = OBJETIVO_TEXTO[objetivoFinal];
 
+    const userMessage = temIngredientes
+      ? `Monte os 3 cardápios-modelo pedidos, com cerca de ${calorias} kcal por dia em cada um.
+Ingredientes que a pessoa já tem em casa: ${ingredientesDisponiveis}.
+Responda no formato JSON pedido.`
+      : `Monte os 3 cardápios-modelo pedidos, com cerca de ${calorias} kcal por dia em cada um.
+A pessoa não tem ingredientes específicos em mente. Responda no formato JSON pedido.`;
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -181,14 +228,9 @@ module.exports = async (req, res) => {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 8000,
-        system: buildSystemPrompt(calorias, objetivoTexto),
-        messages: [
-          {
-            role: "user",
-            content: `Monte o cardápio de 7 dias pedido, com cerca de ${calorias} kcal por dia. Responda no formato JSON pedido.`,
-          },
-        ],
+        max_tokens: 4500,
+        system: buildSystemPrompt(calorias, objetivoTexto, temIngredientes),
+        messages: [{ role: "user", content: userMessage }],
       }),
     });
 
@@ -205,10 +247,10 @@ module.exports = async (req, res) => {
     const textBlock = (data.content || []).find((b) => b.type === "text");
     const rawText = textBlock ? textBlock.text : "{}";
 
-    let plano, foiReparado;
+    let bruto, foiReparado;
     try {
       const resultado = repairAndParseJSON(rawText);
-      plano = resultado.parsed;
+      bruto = resultado.parsed;
       foiReparado = resultado.reparado;
       if (foiReparado) {
         console.warn("Resposta da IA veio cortada (bateu no limite de tamanho) — usei uma versão reparada/parcial.");
@@ -221,6 +263,13 @@ module.exports = async (req, res) => {
         raw: rawText.slice(0, 500),
       });
     }
+
+    // transforma os 3 cardápios-modelo em 7 dias (segunda a domingo), alternando-os
+    const plano = {
+      titulo: bruto.titulo || "Plano gerado",
+      resumo: bruto.resumo || "",
+      dias: montarSemanaAPartirDasVariacoes(bruto.variacoes),
+    };
 
     return res.status(200).json({
       bmr,
