@@ -341,13 +341,13 @@
 
   <!-- ---------------- PLANO 15 DIAS ---------------- -->
   <section id="view-plano" class="card hidden" style="background:transparent; border:none; padding:0;">
-    <h2 style="margin:0 0 14px;">Plano de 15 dias</h2>
+    <h2 style="margin:0 0 14px;">Plano semanal</h2>
 
     <div id="planoFormBox" class="option-card hidden">
-      <h3>Vamos montar seu cardápio dos próximos 15 dias</h3>
+      <h3>Vamos montar seu cardápio da semana</h3>
       <div class="desc">
         Preencha seus dados — calculamos suas calorias ideais e montamos um cardápio brasileiro pra você.
-        A cada 15 dias você registra seu peso de novo e a gente mantém ou ajusta o cardápio.
+        Toda semana você registra seu peso de novo e a gente mantém ou ajusta o cardápio.
       </div>
 
       <label>Peso atual (kg)</label>
@@ -384,7 +384,7 @@
       <label>Ingredientes que você já tem em casa (opcional)</label>
       <input id="planoIngredientes" placeholder="Ex: arroz, feijão, frango, ovos, batata" />
 
-      <button class="primary" style="margin-top:14px;" onclick="gerarPlano()">Gerar meu plano de 15 dias</button>
+      <button class="primary" style="margin-top:14px;" onclick="gerarPlano()">Gerar meu plano semanal</button>
     </div>
 
     <div id="planoAtivoBox" class="hidden">
@@ -392,7 +392,7 @@
 
       <div id="planoCheckinBox" class="card hidden" style="border-color:var(--accent);">
         <h3 style="margin-top:0;">Hora de reavaliar 🎯</h3>
-        <p class="muted">Já se passaram 15 dias. Registre seu peso atual pra gente ver sua evolução e manter (ou ajustar) seu cardápio.</p>
+        <p class="muted">Já se passou 1 semana. Registre seu peso atual pra gente ver sua evolução e manter (ou ajustar) seu cardápio.</p>
         <input id="planoPesoCheckin" type="number" step="0.1" placeholder="Seu peso agora (kg)" />
         <label style="margin-top:10px;">Ingredientes que você tem em casa agora (opcional — deixe em branco pra manter o que você digitou antes)</label>
         <input id="planoIngredientesCheckin" placeholder="Ex: arroz, feijão, frango, ovos, batata" />
@@ -401,6 +401,9 @@
       </div>
 
       <div id="planoMenuAtual"></div>
+
+      <button class="secondary" style="margin-top:16px;" onclick="excluirPlanoAtivo()">🗑️ Excluir este plano e criar outro</button>
+      <p class="muted" id="planoExcluirStatus"></p>
     </div>
 
     <p class="muted" id="planoStatus"></p>
@@ -562,7 +565,7 @@ import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy, Timestamp, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc, query, where, getDocs, orderBy, Timestamp, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // ⚠️ Cole aqui a configuração do SEU projeto Firebase
@@ -586,7 +589,7 @@ window._state = { user: null, role: null, idToken: null };
 // ---------- Navegação ----------
 const NAV_ITEMS = {
   app: { label: "🏠 Meu diário", roles: ["user", "affiliate", "admin"] },
-  plano: { label: "🗓️ Plano 15 dias", roles: ["user", "affiliate", "admin"] },
+  plano: { label: "🗓️ Plano semanal", roles: ["user", "affiliate", "admin"] },
   registrar: { label: "📸 Registrar prato", roles: ["user", "affiliate", "admin"] },
   receita: { label: "🍳 Gerar receita", roles: ["user", "affiliate", "admin"] },
   peso: { label: "⚖️ Meu peso", roles: ["user", "affiliate", "admin"] },
@@ -1145,7 +1148,9 @@ async function loadHomeWeightWidget() {
   }
 }
 
-// ---------- Plano de 15 dias ----------
+// ---------- Plano semanal ----------
+const DIAS_CICLO_PLANO = 7;
+
 async function loadPlanoView() {
   const uid = window._state.user.uid;
   const snap = await getDocs(
@@ -1166,8 +1171,8 @@ async function loadPlanoView() {
 function renderPlanoResumo(ativo) {
   const inicio = ativo.startDate?.toDate ? ativo.startDate.toDate() : new Date();
   const diasPassados = Math.floor((Date.now() - inicio.getTime()) / (24 * 60 * 60 * 1000));
-  const diasRestantes = Math.max(0, 15 - diasPassados);
-  const pct = Math.min(100, Math.round((diasPassados / 15) * 100));
+  const diasRestantes = Math.max(0, DIAS_CICLO_PLANO - diasPassados);
+  const pct = Math.min(100, Math.round((diasPassados / DIAS_CICLO_PLANO) * 100));
   const objetivoLabel =
     { perder: "Perder peso", manter: "Manter peso", ganhar: "Ganhar peso" }[ativo.objetivo] || "Manter peso";
 
@@ -1369,6 +1374,26 @@ window.atualizarCiclo = async function () {
     loadWeightHistory();
     loadHomeWeightWidget();
     loadTodayMeals();
+  } catch (e) {
+    statusEl.textContent = "Erro: " + e.message;
+  }
+};
+
+window.excluirPlanoAtivo = async function () {
+  const statusEl = document.getElementById("planoExcluirStatus");
+  const ativo = (window._state.ciclos || []).find((c) => c.status === "ativo");
+  if (!ativo) return;
+
+  const confirmado = window.confirm(
+    "Tem certeza que quer excluir o plano atual? Você vai poder criar outro na hora, mas o cardápio de agora será perdido."
+  );
+  if (!confirmado) return;
+
+  statusEl.textContent = "Excluindo...";
+  try {
+    await deleteDoc(doc(db, "users", window._state.user.uid, "nutritionCycles", ativo.id));
+    statusEl.textContent = "";
+    loadPlanoView();
   } catch (e) {
     statusEl.textContent = "Erro: " + e.message;
   }
