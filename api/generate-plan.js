@@ -1,4 +1,5 @@
 const { getAuthedUser } = require("../lib/firebaseAdmin");
+const { repairAndParseJSON } = require("../lib/jsonRepair");
 
 const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5";
 
@@ -95,6 +96,11 @@ almoço, lanche da tarde e jantar. A soma diária de calorias deve ficar próxim
 ${caloriasAlvo} kcal por dia. Varie os pratos ao longo da semana para não repetir
 sempre a mesma coisa, priorizando alimentos comuns e acessíveis no Brasil.
 
+Seja DIRETO E CONCISO em cada campo — isso é importante pra resposta inteira
+caber no limite de tamanho: "resumo" com no máximo 1-2 frases curtas; "modo_preparo"
+com no máximo 3 passos curtos (uma frase cada); "ingredientes_para_comprar" com no
+máximo 4 itens, e "motivo" com poucas palavras (ou "" se não precisar explicar).
+
 Responda SOMENTE com um JSON válido, sem texto antes ou depois, no formato exato:
 {
   "titulo": "string curta",
@@ -175,7 +181,7 @@ module.exports = async (req, res) => {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 6500,
+        max_tokens: 8000,
         system: buildSystemPrompt(calorias, objetivoTexto),
         messages: [
           {
@@ -199,20 +205,31 @@ module.exports = async (req, res) => {
     const textBlock = (data.content || []).find((b) => b.type === "text");
     const rawText = textBlock ? textBlock.text : "{}";
 
-    let plano;
+    let plano, foiReparado;
     try {
-      const cleaned = rawText.replace(/```json|```/g, "").trim();
-      plano = JSON.parse(cleaned);
+      const resultado = repairAndParseJSON(rawText);
+      plano = resultado.parsed;
+      foiReparado = resultado.reparado;
+      if (foiReparado) {
+        console.warn("Resposta da IA veio cortada (bateu no limite de tamanho) — usei uma versão reparada/parcial.");
+      }
     } catch (e) {
       console.error("Não foi possível interpretar a resposta da IA:", rawText);
       return res.status(502).json({
         error: "resposta da IA em formato inesperado",
-        detalhe: rawText.slice(0, 300),
-        raw: rawText,
+        detalhe: "A resposta ficou grande demais e foi cortada no meio. Tente gerar de novo.",
+        raw: rawText.slice(0, 500),
       });
     }
 
-    return res.status(200).json({ bmr, tdee, caloriasCalculadas: calorias, ajusteAplicado, plano });
+    return res.status(200).json({
+      bmr,
+      tdee,
+      caloriasCalculadas: calorias,
+      ajusteAplicado,
+      plano,
+      avisoTruncado: foiReparado || false,
+    });
   } catch (err) {
     console.error("Erro ao gerar plano:", err);
     return res.status(500).json({
