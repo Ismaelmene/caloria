@@ -316,65 +316,20 @@
 
     <div id="subBanner" class="card" style="background:#0d141b;"></div>
 
-    <div class="subtabs">
-      <button class="subtab-btn active" id="subtabRegistrarBtn" onclick="showSubTab('registrar')">📸 Registrar prato</button>
-      <button class="subtab-btn" id="subtabReceitaBtn" onclick="showSubTab('receita')">🍳 Receitas com IA</button>
-    </div>
-
-    <div id="subview-registrar" class="card">
-      <label>Foto do prato</label>
-      <input type="file" accept="image/*" capture="environment" id="photoInput" onchange="onPhotoSelected(event)" />
-      <img id="photoPreview" />
-      <button class="primary" id="analyzeBtn" onclick="analyzePhoto()" disabled>Analisar foto</button>
-      <p class="muted" id="analyzeStatus"></p>
-      <div id="analyzeResult"></div>
-    </div>
-
-    <div id="subview-receita" class="hidden">
-
-      <div class="option-card">
-        <h3>🧊 Opção 1 — Tenho estes ingredientes em casa</h3>
-        <div class="desc">A IA monta a receita priorizando o que você já tem.</div>
-
-        <label>Ingredientes que você tem (separe por vírgula)</label>
-        <input id="recipeIngredientes" placeholder="Ex: arroz, ovo, tomate, frango" />
-
-        <label>Calorias desejadas</label>
-        <input id="recipeCaloriasIngr" type="number" placeholder="Ex: 500" />
-        <button class="secondary" style="margin:-6px 0 14px;" onclick="usarRestanteDaMeta('recipeCaloriasIngr')">Usar quanto falta da minha meta hoje</button>
-
-        <label>Para quando é essa receita?</label>
-        <div class="chip-row" id="duracaoChipsIngr">
-          <button type="button" class="chip active" data-dur="refeicao">Só essa refeição</button>
-          <button type="button" class="chip" data-dur="dia">O dia inteiro</button>
-          <button type="button" class="chip" data-dur="semana">A semana</button>
-          <button type="button" class="chip" data-dur="mes">O mês</button>
-        </div>
-
-        <button class="primary" style="margin-top:12px;" onclick="generateRecipe('ingredientes')">Gerar com meus ingredientes</button>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong style="font-size:14px;">⚖️ Seu peso</strong>
+        <button class="link-btn" onclick="showView('peso')">Ver histórico</button>
       </div>
-
-      <div class="option-card">
-        <h3>✨ Opção 2 — Só quero informar as calorias</h3>
-        <div class="desc">A IA cria a refeição do zero e te diz o que comprar.</div>
-
-        <label>Calorias desejadas</label>
-        <input id="recipeCaloriasLivre" type="number" placeholder="Ex: 500" />
-        <button class="secondary" style="margin:-6px 0 14px;" onclick="usarRestanteDaMeta('recipeCaloriasLivre')">Usar quanto falta da minha meta hoje</button>
-
-        <label>Para quando é essa receita?</label>
-        <div class="chip-row" id="duracaoChipsLivre">
-          <button type="button" class="chip active" data-dur="refeicao">Só essa refeição</button>
-          <button type="button" class="chip" data-dur="dia">O dia inteiro</button>
-          <button type="button" class="chip" data-dur="semana">A semana</button>
-          <button type="button" class="chip" data-dur="mes">O mês</button>
-        </div>
-
-        <button class="primary" style="margin-top:12px;" onclick="generateRecipe('livre')">Gerar do zero</button>
+      <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:10px;">
+        <span style="font-size:22px; font-weight:800;" id="homeWeightCurrent">—</span>
+        <span class="muted" id="homeWeightDelta10"></span>
       </div>
-
-      <p class="muted" id="recipeStatus"></p>
-      <div id="recipeResult"></div>
+      <div style="display:flex; gap:8px;">
+        <input id="homeWeightInput" type="number" step="0.1" placeholder="Registrar peso agora (kg)" style="margin:0;" />
+        <button class="primary" style="white-space:nowrap;" onclick="registerWeight('homeWeightInput', 'homeWeightStatus')">Salvar</button>
+      </div>
+      <p class="muted" id="homeWeightStatus"></p>
     </div>
 
     <h2 style="margin-top:24px;">Refeições de hoje</h2>
@@ -382,6 +337,66 @@
       <thead><tr><th>Prato</th><th>Kcal</th><th>Hora</th></tr></thead>
       <tbody></tbody>
     </table>
+  </section>
+
+  <!-- ---------------- REGISTRAR PRATO ---------------- -->
+  <section id="view-registrar" class="card hidden">
+    <h2>Registrar prato</h2>
+    <label>Foto do prato</label>
+    <input type="file" accept="image/*" capture="environment" id="photoInput" onchange="onPhotoSelected(event)" />
+    <img id="photoPreview" />
+    <button class="primary" id="analyzeBtn" onclick="analyzePhoto()" disabled>Analisar foto</button>
+    <p class="muted" id="analyzeStatus"></p>
+    <div id="analyzeResult"></div>
+  </section>
+
+  <!-- ---------------- GERAR RECEITA ---------------- -->
+  <section id="view-receita" class="card hidden" style="background:transparent; border:none; padding:0;">
+    <h2 style="margin:0 0 14px;">Gerar receita</h2>
+
+    <div class="option-card">
+      <h3>🧊 Opção 1 — Tenho estes ingredientes em casa</h3>
+      <div class="desc">A receita é montada priorizando o que você já tem.</div>
+
+      <label>Ingredientes que você tem (separe por vírgula)</label>
+      <input id="recipeIngredientes" placeholder="Ex: arroz, ovo, tomate, frango" />
+
+      <label>Calorias desejadas</label>
+      <input id="recipeCaloriasIngr" type="number" placeholder="Ex: 500" />
+      <button class="secondary" style="margin:-6px 0 14px;" onclick="usarRestanteDaMeta('recipeCaloriasIngr')">Usar quanto falta da minha meta hoje</button>
+
+      <label>Para quando é essa receita?</label>
+      <div class="chip-row" id="duracaoChipsIngr">
+        <button type="button" class="chip active" data-dur="refeicao">Só essa refeição</button>
+        <button type="button" class="chip" data-dur="dia">O dia inteiro</button>
+        <button type="button" class="chip" data-dur="semana">A semana</button>
+        <button type="button" class="chip" data-dur="mes">O mês</button>
+      </div>
+
+      <button class="primary" style="margin-top:12px;" onclick="generateRecipe('ingredientes')">Gerar com meus ingredientes</button>
+    </div>
+
+    <div class="option-card">
+      <h3>✨ Opção 2 — Só quero informar as calorias</h3>
+      <div class="desc">A receita é criada do zero e te diz o que comprar.</div>
+
+      <label>Calorias desejadas</label>
+      <input id="recipeCaloriasLivre" type="number" placeholder="Ex: 500" />
+      <button class="secondary" style="margin:-6px 0 14px;" onclick="usarRestanteDaMeta('recipeCaloriasLivre')">Usar quanto falta da minha meta hoje</button>
+
+      <label>Para quando é essa receita?</label>
+      <div class="chip-row" id="duracaoChipsLivre">
+        <button type="button" class="chip active" data-dur="refeicao">Só essa refeição</button>
+        <button type="button" class="chip" data-dur="dia">O dia inteiro</button>
+        <button type="button" class="chip" data-dur="semana">A semana</button>
+        <button type="button" class="chip" data-dur="mes">O mês</button>
+      </div>
+
+      <button class="primary" style="margin-top:12px;" onclick="generateRecipe('livre')">Gerar do zero</button>
+    </div>
+
+    <p class="muted" id="recipeStatus"></p>
+    <div id="recipeResult"></div>
   </section>
 
   <!-- ---------------- MEU PESO ---------------- -->
@@ -494,8 +509,10 @@ window._state = { user: null, role: null, idToken: null };
 
 // ---------- Navegação ----------
 const NAV_ITEMS = {
-  app: { label: "Meu diário", roles: ["user", "affiliate", "admin"] },
-  peso: { label: "Meu peso", roles: ["user", "affiliate", "admin"] },
+  app: { label: "🏠 Meu diário", roles: ["user", "affiliate", "admin"] },
+  registrar: { label: "📸 Registrar prato", roles: ["user", "affiliate", "admin"] },
+  receita: { label: "🍳 Gerar receita", roles: ["user", "affiliate", "admin"] },
+  peso: { label: "⚖️ Meu peso", roles: ["user", "affiliate", "admin"] },
   afiliado: { label: "Painel afiliado", roles: ["affiliate", "admin"] },
   admin: { label: "Painel admin", roles: ["admin"] },
 };
@@ -534,7 +551,7 @@ window.showView = function (name) {
   document.querySelectorAll("#drawerNav button").forEach((b) => b.classList.remove("active"));
   document.querySelector(`#drawerNav button[data-nav-key="${name}"]`)?.classList.add("active");
   closeDrawer();
-  if (name === "app") loadTodayMeals();
+  if (name === "app") { loadTodayMeals(); loadHomeWeightWidget(); }
   if (name === "peso") loadWeightHistory();
   if (name === "afiliado") loadAffiliatePanel();
   if (name === "admin") loadAdminPanel();
@@ -650,13 +667,6 @@ window.saveDailyGoal = async function () {
   loadTodayMeals();
 };
 
-// ---------- Sub-abas (registrar prato / receitas com IA) ----------
-window.showSubTab = function (name) {
-  document.getElementById("subview-registrar").classList.toggle("hidden", name !== "registrar");
-  document.getElementById("subview-receita").classList.toggle("hidden", name !== "receita");
-  document.getElementById("subtabRegistrarBtn").classList.toggle("active", name === "registrar");
-  document.getElementById("subtabReceitaBtn").classList.toggle("active", name === "receita");
-};
 
 // ---------- Assinatura / paywall ----------
 function renderSubscriptionBanner(userData) {
@@ -788,7 +798,7 @@ async function loadTodayMeals() {
     restante >= 0 ? `restam ${restante}` : `${Math.abs(restante)} acima da meta`;
 }
 
-// ---------- Receitas com IA ----------
+// ---------- Gerar receita ----------
 window.usarRestanteDaMeta = function (targetInputId) {
   const goal = window._state.dailyGoal || 2000;
   const consumido = Number(document.getElementById("todayCalories").textContent) || 0;
@@ -826,7 +836,7 @@ function renderMealCard(refeicao) {
 
 function renderRecipePlan(data) {
   const dias = data.dias || [];
-  if (dias.length === 0) return `<p class="muted">A IA não retornou nenhuma refeição.</p>`;
+  if (dias.length === 0) return `<p class="muted">Não foi possível montar nenhuma refeição.</p>`;
 
   const header = `
     <div class="card" style="background:#0d141b;">
@@ -872,7 +882,7 @@ window.generateRecipe = async function (modo) {
     return;
   }
   if (isIngr && !ingredientes) {
-    statusEl.textContent = "Liste ao menos um ingrediente, ou use a Opção 2 para a IA criar do zero.";
+    statusEl.textContent = "Liste ao menos um ingrediente, ou use a Opção 2 para gerar do zero.";
     return;
   }
 
@@ -896,8 +906,15 @@ window.generateRecipe = async function (modo) {
         objetivo: window._state.objetivo || "manter",
       }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "erro ao gerar receita");
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`erro ao gerar receita (status ${res.status})`);
+    }
+    if (!res.ok) {
+      throw new Error((data.error || "erro ao gerar receita") + (data.detalhe ? ": " + data.detalhe : ""));
+    }
 
     statusEl.textContent = "";
     resultEl.innerHTML = renderRecipePlan(data);
@@ -907,9 +924,10 @@ window.generateRecipe = async function (modo) {
 };
 
 // ---------- Meu peso ----------
-window.registerWeight = async function () {
-  const value = Number(document.getElementById("weightInput").value);
-  const statusEl = document.getElementById("weightStatus");
+window.registerWeight = async function (inputId = "weightInput", statusElId = "weightStatus") {
+  const inputEl = document.getElementById(inputId);
+  const statusEl = document.getElementById(statusElId);
+  const value = Number(inputEl.value);
   if (!value || value <= 0) {
     statusEl.textContent = "Digite um peso válido.";
     return;
@@ -918,9 +936,10 @@ window.registerWeight = async function () {
     peso: value,
     createdAt: serverTimestamp(),
   });
-  document.getElementById("weightInput").value = "";
+  inputEl.value = "";
   statusEl.textContent = "Peso registrado ✅";
   loadWeightHistory();
+  loadHomeWeightWidget();
 };
 
 function buildWeightChartSVG(entries) {
@@ -1001,6 +1020,45 @@ async function loadWeightHistory() {
       (delta10 > 0 ? "+" : "") + delta10.toFixed(1) + " kg";
   } else {
     document.getElementById("weightDelta10").textContent = "aguardando 10 dias de histórico";
+  }
+}
+
+async function loadHomeWeightWidget() {
+  if (!window._state.user) return;
+  const currentEl = document.getElementById("homeWeightCurrent");
+  const deltaEl = document.getElementById("homeWeightDelta10");
+  if (!currentEl || !deltaEl) return;
+
+  const snap = await getDocs(
+    query(collection(db, "users", window._state.user.uid, "weights"), orderBy("createdAt", "asc"))
+  );
+  const entries = [];
+  snap.forEach((docSnap) => {
+    const d = docSnap.data();
+    const when = d.createdAt?.toDate ? d.createdAt.toDate() : new Date();
+    entries.push({ peso: d.peso, date: when });
+  });
+
+  if (entries.length === 0) {
+    currentEl.textContent = "—";
+    deltaEl.textContent = "Registre seu peso pela primeira vez";
+    return;
+  }
+
+  const latest = entries[entries.length - 1];
+  currentEl.textContent = latest.peso + " kg";
+
+  const tenDaysAgo = new Date(latest.date.getTime() - 10 * 24 * 60 * 60 * 1000);
+  let reference = null;
+  for (const e of entries) {
+    if (e.date <= tenDaysAgo) reference = e;
+  }
+  if (reference) {
+    const delta10 = latest.peso - reference.peso;
+    const sinal = delta10 > 0 ? "+" : "";
+    deltaEl.textContent = `${sinal}${delta10.toFixed(1)} kg nos últimos 10 dias`;
+  } else {
+    deltaEl.textContent = "aguardando 10 dias de histórico";
   }
 }
 
