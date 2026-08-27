@@ -1,7 +1,7 @@
 const { getAuthedUser, db } = require("../lib/firebaseAdmin");
 
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || "http://localhost:3000";
-const MONTHLY_PRICE = Number(process.env.MONTHLY_PRICE || 29.9);
+const MONTHLY_PRICE = Number(process.env.MONTHLY_PRICE || 50);
 
 // Cria uma assinatura (preapproval) no Mercado Pago e devolve a URL de checkout
 // para redirecionar o usuário. Não coletamos cartão diretamente aqui (evita
@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
         Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
       },
       body: JSON.stringify({
-        reason: "Assinatura mensal — App Calorias por Foto",
+        reason: "Assinatura mensal — Minha Nutri",
         payer_email: authedUser.email,
         external_reference: externalReference,
         back_url: `${PUBLIC_BASE_URL}/?checkout=retorno`,
