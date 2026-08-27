@@ -1,4 +1,5 @@
 const { getAuthedUser } = require("../lib/firebaseAdmin");
+const { repairAndParseJSON } = require("../lib/jsonRepair");
 
 const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5";
 
@@ -13,25 +14,25 @@ const DURACAO_TEXTO = {
     instrucao: "Gere APENAS 1 refeição única.",
     diasEsperados: 1,
     refeicoesPorDia: 1,
-    maxTokens: 1200,
+    maxTokens: 1500,
   },
   dia: {
     instrucao: "Gere um cardápio para 1 dia inteiro, dividido em 4 refeições: café da manhã, almoço, lanche da tarde e jantar. A soma das 4 deve bater com a meta de calorias informada (que é o total do DIA, não de uma refeição só).",
     diasEsperados: 1,
     refeicoesPorDia: 4,
-    maxTokens: 2200,
+    maxTokens: 3000,
   },
   semana: {
     instrucao: "Gere um cardápio para 7 dias (segunda a domingo), cada dia com 4 refeições (café da manhã, almoço, lanche da tarde e jantar), variando os pratos ao longo da semana para não repetir sempre a mesma coisa. A soma diária de calorias deve bater com a meta informada (que é o total por DIA).",
     diasEsperados: 7,
     refeicoesPorDia: 4,
-    maxTokens: 6500,
+    maxTokens: 8000,
   },
   mes: {
     instrucao: "Gere um cardápio-modelo de 7 dias (segunda a domingo) pensado para ser reaproveitado/repetido ao longo de um mês inteiro, variando os pratos ao longo da semana. Cada dia com 4 refeições (café da manhã, almoço, lanche da tarde e jantar). A soma diária de calorias deve bater com a meta informada (que é o total por DIA). No campo 'resumo', deixe claro que é um modelo semanal pensado para repetir/variar ao longo do mês.",
     diasEsperados: 7,
     refeicoesPorDia: 4,
-    maxTokens: 6500,
+    maxTokens: 8000,
   },
 };
 
@@ -53,6 +54,11 @@ máximo nas receitas. O que faltar para completar as receitas, liste em
 zero e liste TODOS os ingredientes necessários em "ingredientes_para_comprar" de
 cada refeição (deixe "ingredientes_que_voce_tem" vazio em cada uma).`
 }
+
+Seja DIRETO E CONCISO em cada campo — isso é importante pra resposta inteira
+caber no limite de tamanho: "resumo" com no máximo 1-2 frases curtas; "modo_preparo"
+com no máximo 3 passos curtos (uma frase cada); "ingredientes_para_comprar" com no
+máximo 4 itens, e "motivo" com poucas palavras (ou "" se não precisar explicar).
 
 Responda SOMENTE com um JSON válido, sem texto antes ou depois, no formato exato:
 {
@@ -153,20 +159,24 @@ Não tenho ingredientes específicos em mente. Responda no formato JSON pedido.`
     const textBlock = (data.content || []).find((b) => b.type === "text");
     const rawText = textBlock ? textBlock.text : "{}";
 
-    let parsed;
+    let parsed, foiReparado;
     try {
-      const cleaned = rawText.replace(/```json|```/g, "").trim();
-      parsed = JSON.parse(cleaned);
+      const resultado = repairAndParseJSON(rawText);
+      parsed = resultado.parsed;
+      foiReparado = resultado.reparado;
+      if (foiReparado) {
+        console.warn("Resposta da IA veio cortada (bateu no limite de tamanho) — usei uma versão reparada/parcial.");
+      }
     } catch (e) {
       console.error("Não foi possível interpretar a resposta da IA:", rawText);
       return res.status(502).json({
         error: "resposta da IA em formato inesperado",
-        detalhe: rawText.slice(0, 300),
-        raw: rawText,
+        detalhe: "A resposta ficou grande demais e foi cortada no meio. Tente gerar de novo.",
+        raw: rawText.slice(0, 500),
       });
     }
 
-    return res.status(200).json(parsed);
+    return res.status(200).json(foiReparado ? { ...parsed, avisoTruncado: true } : parsed);
   } catch (err) {
     console.error("Erro ao gerar receita:", err);
     return res.status(500).json({
