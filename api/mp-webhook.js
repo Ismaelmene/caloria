@@ -26,9 +26,28 @@ async function handleApprovedPayment(payment) {
   } catch (e) {
     console.warn("external_reference não era um JSON válido:", payment.external_reference);
   }
-  const { uid, ref: referralCode } = ref;
+  const { uid, ref: referralCode, tipo, creditos } = ref;
   if (!uid) {
     console.warn("Pagamento aprovado sem uid no external_reference, ignorando.");
+    return;
+  }
+
+  // Compra avulsa de créditos extras — não é a assinatura, então não mexe no
+  // status de assinatura nem no ciclo de orçamento mensal, só soma créditos.
+  if (tipo === "creditos") {
+    await db.collection("users").doc(uid).set(
+      { extraCredits: admin.firestore.FieldValue.increment(Number(creditos) || 0) },
+      { merge: true }
+    );
+
+    await db.collection("payments").doc(String(payment.id)).set({
+      userId: uid,
+      amount: payment.transaction_amount,
+      period: currentPeriod(),
+      tipo: "creditos",
+      creditosComprados: Number(creditos) || 0,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
     return;
   }
 
@@ -38,6 +57,11 @@ async function handleApprovedPayment(payment) {
       subscriptionStatus: "active",
       lastPaymentAt: admin.firestore.FieldValue.serverTimestamp(),
       lastPaymentAmount: payment.transaction_amount,
+      // cada pagamento aprovado da assinatura (inclusive a primeira cobrança)
+      // marca o início de um novo ciclo de orçamento de IA de R$25 — assim o
+      // reset acontece na data de renovação de cada pessoa, não num dia fixo
+      budgetSpentBRL: 0,
+      budgetCycleStart: admin.firestore.FieldValue.serverTimestamp(),
     },
     { merge: true }
   );
