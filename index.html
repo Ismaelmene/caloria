@@ -381,6 +381,9 @@
         <button type="button" class="chip" data-obj="ganhar">Ganhar peso</button>
       </div>
 
+      <label>Ingredientes que você já tem em casa (opcional)</label>
+      <input id="planoIngredientes" placeholder="Ex: arroz, feijão, frango, ovos, batata" />
+
       <button class="primary" style="margin-top:14px;" onclick="gerarPlano()">Gerar meu plano de 15 dias</button>
     </div>
 
@@ -391,6 +394,8 @@
         <h3 style="margin-top:0;">Hora de reavaliar 🎯</h3>
         <p class="muted">Já se passaram 15 dias. Registre seu peso atual pra gente ver sua evolução e manter (ou ajustar) seu cardápio.</p>
         <input id="planoPesoCheckin" type="number" step="0.1" placeholder="Seu peso agora (kg)" />
+        <label style="margin-top:10px;">Ingredientes que você tem em casa agora (opcional — deixe em branco pra manter o que você digitou antes)</label>
+        <input id="planoIngredientesCheckin" placeholder="Ex: arroz, feijão, frango, ovos, batata" />
         <button class="primary" onclick="atualizarCiclo()">Registrar e atualizar plano</button>
         <p class="muted" id="planoCheckinStatus"></p>
       </div>
@@ -1220,6 +1225,7 @@ window.gerarPlano = async function () {
   const sexo = getActiveChip("planoSexoChips") || "F";
   const nivelAtividade = document.getElementById("planoAtividade").value;
   const objetivo = getActiveChip("planoObjetivoChips") || "manter";
+  const ingredientesDisponiveis = document.getElementById("planoIngredientes").value.trim();
 
   if (!peso || !altura || !idade) {
     statusEl.textContent = "Preencha peso, altura e idade.";
@@ -1232,7 +1238,7 @@ window.gerarPlano = async function () {
     const res = await fetch("/api/generate-plan", {
       method: "POST",
       headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
-      body: JSON.stringify({ pesoAtual: peso, alturaCm: altura, idade, sexo, nivelAtividade, objetivo }),
+      body: JSON.stringify({ pesoAtual: peso, alturaCm: altura, idade, sexo, nivelAtividade, objetivo, ingredientesDisponiveis }),
     });
     let data;
     try {
@@ -1253,6 +1259,7 @@ window.gerarPlano = async function () {
       sexo,
       nivelAtividade,
       objetivo,
+      ingredientesDisponiveis,
       caloriasCalculadas: data.caloriasCalculadas,
       bmr: data.bmr,
       tdee: data.tdee,
@@ -1289,6 +1296,9 @@ window.atualizarCiclo = async function () {
   const ativo = (window._state.ciclos || []).find((c) => c.status === "ativo");
   if (!ativo) return;
 
+  const ingredientesDigitados = document.getElementById("planoIngredientesCheckin").value.trim();
+  const ingredientesDisponiveis = ingredientesDigitados || ativo.ingredientesDisponiveis || "";
+
   statusEl.textContent = "Atualizando seu plano (pode levar um minuto)...";
 
   try {
@@ -1302,6 +1312,7 @@ window.atualizarCiclo = async function () {
         sexo: ativo.sexo,
         nivelAtividade: ativo.nivelAtividade,
         objetivo: ativo.objetivo,
+        ingredientesDisponiveis,
         cicloAnterior: { pesoInicial: ativo.pesoInicial, pesoFinal: novoPeso, caloriasCalculadas: ativo.caloriasCalculadas },
       }),
     });
@@ -1335,6 +1346,7 @@ window.atualizarCiclo = async function () {
       sexo: ativo.sexo,
       nivelAtividade: ativo.nivelAtividade,
       objetivo: ativo.objetivo,
+      ingredientesDisponiveis,
       caloriasCalculadas: data.caloriasCalculadas,
       bmr: data.bmr,
       tdee: data.tdee,
@@ -1351,6 +1363,7 @@ window.atualizarCiclo = async function () {
     document.getElementById("dailyGoalInput").value = data.caloriasCalculadas;
 
     document.getElementById("planoPesoCheckin").value = "";
+    document.getElementById("planoIngredientesCheckin").value = "";
     statusEl.textContent = "";
     loadPlanoView();
     loadWeightHistory();
