@@ -339,6 +339,77 @@
     </table>
   </section>
 
+  <!-- ---------------- PLANO 15 DIAS ---------------- -->
+  <section id="view-plano" class="card hidden" style="background:transparent; border:none; padding:0;">
+    <h2 style="margin:0 0 14px;">Plano de 15 dias</h2>
+
+    <div id="planoFormBox" class="option-card hidden">
+      <h3>Vamos montar seu cardápio dos próximos 15 dias</h3>
+      <div class="desc">
+        Preencha seus dados — calculamos suas calorias ideais e montamos um cardápio brasileiro pra você.
+        A cada 15 dias você registra seu peso de novo e a gente mantém ou ajusta o cardápio.
+      </div>
+
+      <label>Peso atual (kg)</label>
+      <input id="planoPeso" type="number" step="0.1" placeholder="Ex: 78.5" />
+
+      <label>Altura (cm)</label>
+      <input id="planoAltura" type="number" placeholder="Ex: 170" />
+
+      <label>Idade</label>
+      <input id="planoIdade" type="number" placeholder="Ex: 32" />
+
+      <label>Sexo (usado só pro cálculo calórico)</label>
+      <div class="chip-row" id="planoSexoChips">
+        <button type="button" class="chip active" data-sexo="F">Feminino</button>
+        <button type="button" class="chip" data-sexo="M">Masculino</button>
+      </div>
+
+      <label>Nível de atividade física</label>
+      <select id="planoAtividade">
+        <option value="sedentario">Sedentário (pouco ou nenhum exercício)</option>
+        <option value="leve">Leve (exercício leve 1 a 3x/semana)</option>
+        <option value="moderado" selected>Moderado (exercício moderado 3 a 5x/semana)</option>
+        <option value="intenso">Intenso (exercício pesado 6 a 7x/semana)</option>
+        <option value="muito_intenso">Muito intenso (trabalho físico + treino)</option>
+      </select>
+
+      <label>Objetivo</label>
+      <div class="chip-row" id="planoObjetivoChips">
+        <button type="button" class="chip" data-obj="perder">Perder peso</button>
+        <button type="button" class="chip active" data-obj="manter">Manter peso</button>
+        <button type="button" class="chip" data-obj="ganhar">Ganhar peso</button>
+      </div>
+
+      <button class="primary" style="margin-top:14px;" onclick="gerarPlano()">Gerar meu plano de 15 dias</button>
+    </div>
+
+    <div id="planoAtivoBox" class="hidden">
+      <div class="card" id="planoResumoCard"></div>
+
+      <div id="planoCheckinBox" class="card hidden" style="border-color:var(--accent);">
+        <h3 style="margin-top:0;">Hora de reavaliar 🎯</h3>
+        <p class="muted">Já se passaram 15 dias. Registre seu peso atual pra gente ver sua evolução e manter (ou ajustar) seu cardápio.</p>
+        <input id="planoPesoCheckin" type="number" step="0.1" placeholder="Seu peso agora (kg)" />
+        <button class="primary" onclick="atualizarCiclo()">Registrar e atualizar plano</button>
+        <p class="muted" id="planoCheckinStatus"></p>
+      </div>
+
+      <div id="planoMenuAtual"></div>
+    </div>
+
+    <p class="muted" id="planoStatus"></p>
+
+    <h3 style="margin-top:26px;">Sua evolução</h3>
+    <div class="card">
+      <div id="planoEvolucaoChart"></div>
+      <table id="planoHistoricoTable" style="margin-top:12px;">
+        <thead><tr><th>Início</th><th>Peso inicial</th><th>Peso final</th><th>Meta</th><th>Resultado</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- ---------------- REGISTRAR PRATO ---------------- -->
   <section id="view-registrar" class="card hidden">
     <h2>Registrar prato</h2>
@@ -486,7 +557,7 @@ import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, collection, addDoc, query, where, getDocs, orderBy, Timestamp, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy, Timestamp, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // ⚠️ Cole aqui a configuração do SEU projeto Firebase
@@ -510,6 +581,7 @@ window._state = { user: null, role: null, idToken: null };
 // ---------- Navegação ----------
 const NAV_ITEMS = {
   app: { label: "🏠 Meu diário", roles: ["user", "affiliate", "admin"] },
+  plano: { label: "🗓️ Plano 15 dias", roles: ["user", "affiliate", "admin"] },
   registrar: { label: "📸 Registrar prato", roles: ["user", "affiliate", "admin"] },
   receita: { label: "🍳 Gerar receita", roles: ["user", "affiliate", "admin"] },
   peso: { label: "⚖️ Meu peso", roles: ["user", "affiliate", "admin"] },
@@ -552,6 +624,7 @@ window.showView = function (name) {
   document.querySelector(`#drawerNav button[data-nav-key="${name}"]`)?.classList.add("active");
   closeDrawer();
   if (name === "app") { loadTodayMeals(); loadHomeWeightWidget(); }
+  if (name === "plano") loadPlanoView();
   if (name === "peso") loadWeightHistory();
   if (name === "afiliado") loadAffiliatePanel();
   if (name === "admin") loadAdminPanel();
@@ -637,13 +710,13 @@ onAuthStateChanged(auth, async (user) => {
 // ---------- Chips reutilizáveis (objetivo / duração) ----------
 function setActiveChip(containerId, value) {
   document.querySelectorAll(`#${containerId} .chip`).forEach((btn) => {
-    const key = btn.dataset.obj || btn.dataset.dur;
+    const key = btn.dataset.obj || btn.dataset.dur || btn.dataset.sexo;
     btn.classList.toggle("active", key === value);
   });
 }
 function getActiveChip(containerId) {
   const active = document.querySelector(`#${containerId} .chip.active`);
-  return active ? active.dataset.obj || active.dataset.dur : null;
+  return active ? active.dataset.obj || active.dataset.dur || active.dataset.sexo : null;
 }
 document.addEventListener("click", (e) => {
   const chip = e.target.closest(".chip");
@@ -1061,6 +1134,224 @@ async function loadHomeWeightWidget() {
     deltaEl.textContent = "aguardando 10 dias de histórico";
   }
 }
+
+// ---------- Plano de 15 dias ----------
+async function loadPlanoView() {
+  const uid = window._state.user.uid;
+  const snap = await getDocs(
+    query(collection(db, "users", uid, "nutritionCycles"), orderBy("createdAt", "asc"))
+  );
+  const ciclos = [];
+  snap.forEach((docSnap) => ciclos.push({ id: docSnap.id, ...docSnap.data() }));
+  window._state.ciclos = ciclos;
+
+  const ativo = ciclos.find((c) => c.status === "ativo");
+  document.getElementById("planoFormBox").classList.toggle("hidden", Boolean(ativo));
+  document.getElementById("planoAtivoBox").classList.toggle("hidden", !ativo);
+  if (ativo) renderPlanoResumo(ativo);
+
+  renderPlanoHistorico(ciclos);
+}
+
+function renderPlanoResumo(ativo) {
+  const inicio = ativo.startDate?.toDate ? ativo.startDate.toDate() : new Date();
+  const diasPassados = Math.floor((Date.now() - inicio.getTime()) / (24 * 60 * 60 * 1000));
+  const diasRestantes = Math.max(0, 15 - diasPassados);
+  const pct = Math.min(100, Math.round((diasPassados / 15) * 100));
+  const objetivoLabel =
+    { perder: "Perder peso", manter: "Manter peso", ganhar: "Ganhar peso" }[ativo.objetivo] || "Manter peso";
+
+  document.getElementById("planoResumoCard").innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+      <strong>Ciclo iniciado em ${inicio.toLocaleDateString("pt-BR")}</strong>
+      <span class="muted">${objetivoLabel}</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+    <p class="muted" style="margin-top:8px;">
+      ${diasRestantes > 0 ? `Faltam ${diasRestantes} dia(s) para reavaliar` : "Hora de reavaliar!"} · Meta: ${ativo.caloriasCalculadas} kcal/dia
+    </p>
+    ${ativo.ajusteAplicado ? `<p class="muted">${ativo.ajusteAplicado}</p>` : ""}
+  `;
+
+  document.getElementById("planoCheckinBox").classList.toggle("hidden", diasRestantes > 0);
+  document.getElementById("planoMenuAtual").innerHTML = renderRecipePlan(ativo.plano || { dias: [] });
+}
+
+function renderPlanoHistorico(ciclos) {
+  const tbody = document.querySelector("#planoHistoricoTable tbody");
+  tbody.innerHTML = "";
+  const pontos = [];
+
+  ciclos.forEach((c) => {
+    const inicio = c.startDate?.toDate ? c.startDate.toDate() : new Date();
+    pontos.push({ peso: c.pesoInicial, date: inicio });
+    let resultado = "Em andamento";
+    if (c.status === "concluido" && c.pesoFinal != null) {
+      const delta = c.pesoFinal - c.pesoInicial;
+      resultado = (delta > 0 ? "+" : "") + delta.toFixed(1) + " kg";
+      const fim = c.encerradoEm?.toDate ? c.encerradoEm.toDate() : inicio;
+      pontos.push({ peso: c.pesoFinal, date: fim });
+    }
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${inicio.toLocaleDateString("pt-BR")}</td>
+      <td>${c.pesoInicial} kg</td>
+      <td>${c.pesoFinal != null ? c.pesoFinal + " kg" : "—"}</td>
+      <td>${c.caloriasCalculadas} kcal</td>
+      <td>${resultado}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("planoEvolucaoChart").innerHTML = buildWeightChartSVG(pontos);
+}
+
+window.gerarPlano = async function () {
+  const statusEl = document.getElementById("planoStatus");
+  const peso = Number(document.getElementById("planoPeso").value);
+  const altura = Number(document.getElementById("planoAltura").value);
+  const idade = Number(document.getElementById("planoIdade").value);
+  const sexo = getActiveChip("planoSexoChips") || "F";
+  const nivelAtividade = document.getElementById("planoAtividade").value;
+  const objetivo = getActiveChip("planoObjetivoChips") || "manter";
+
+  if (!peso || !altura || !idade) {
+    statusEl.textContent = "Preencha peso, altura e idade.";
+    return;
+  }
+
+  statusEl.textContent = "Calculando suas calorias e montando seu cardápio (pode levar um minuto)...";
+
+  try {
+    const res = await fetch("/api/generate-plan", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      body: JSON.stringify({ pesoAtual: peso, alturaCm: altura, idade, sexo, nivelAtividade, objetivo }),
+    });
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`erro ao gerar plano (status ${res.status})`);
+    }
+    if (!res.ok) {
+      throw new Error((data.error || "erro ao gerar plano") + (data.detalhe ? ": " + data.detalhe : ""));
+    }
+
+    await addDoc(collection(db, "users", window._state.user.uid, "nutritionCycles"), {
+      createdAt: serverTimestamp(),
+      startDate: serverTimestamp(),
+      pesoInicial: peso,
+      alturaCm: altura,
+      idade,
+      sexo,
+      nivelAtividade,
+      objetivo,
+      caloriasCalculadas: data.caloriasCalculadas,
+      bmr: data.bmr,
+      tdee: data.tdee,
+      ajusteAplicado: data.ajusteAplicado,
+      plano: data.plano,
+      status: "ativo",
+      pesoFinal: null,
+      encerradoEm: null,
+    });
+
+    await setDoc(doc(db, "users", window._state.user.uid), { dailyGoal: data.caloriasCalculadas, objetivo }, { merge: true });
+    window._state.dailyGoal = data.caloriasCalculadas;
+    window._state.objetivo = objetivo;
+    document.getElementById("dailyGoalInput").value = data.caloriasCalculadas;
+    setActiveChip("objetivoChips", objetivo);
+
+    statusEl.textContent = "Plano gerado ✅";
+    loadPlanoView();
+    loadTodayMeals();
+  } catch (e) {
+    statusEl.textContent = "Erro: " + e.message;
+  }
+};
+
+window.atualizarCiclo = async function () {
+  const statusEl = document.getElementById("planoCheckinStatus");
+  const novoPeso = Number(document.getElementById("planoPesoCheckin").value);
+  if (!novoPeso || novoPeso <= 0) {
+    statusEl.textContent = "Digite um peso válido.";
+    return;
+  }
+
+  const ativo = (window._state.ciclos || []).find((c) => c.status === "ativo");
+  if (!ativo) return;
+
+  statusEl.textContent = "Atualizando seu plano (pode levar um minuto)...";
+
+  try {
+    const res = await fetch("/api/generate-plan", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${window._state.idToken}` },
+      body: JSON.stringify({
+        pesoAtual: novoPeso,
+        alturaCm: ativo.alturaCm,
+        idade: ativo.idade,
+        sexo: ativo.sexo,
+        nivelAtividade: ativo.nivelAtividade,
+        objetivo: ativo.objetivo,
+        cicloAnterior: { pesoInicial: ativo.pesoInicial, pesoFinal: novoPeso, caloriasCalculadas: ativo.caloriasCalculadas },
+      }),
+    });
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`erro ao atualizar plano (status ${res.status})`);
+    }
+    if (!res.ok) {
+      throw new Error((data.error || "erro ao atualizar plano") + (data.detalhe ? ": " + data.detalhe : ""));
+    }
+
+    await updateDoc(doc(db, "users", window._state.user.uid, "nutritionCycles", ativo.id), {
+      status: "concluido",
+      pesoFinal: novoPeso,
+      encerradoEm: serverTimestamp(),
+    });
+
+    await addDoc(collection(db, "users", window._state.user.uid, "weights"), {
+      peso: novoPeso,
+      createdAt: serverTimestamp(),
+    });
+
+    await addDoc(collection(db, "users", window._state.user.uid, "nutritionCycles"), {
+      createdAt: serverTimestamp(),
+      startDate: serverTimestamp(),
+      pesoInicial: novoPeso,
+      alturaCm: ativo.alturaCm,
+      idade: ativo.idade,
+      sexo: ativo.sexo,
+      nivelAtividade: ativo.nivelAtividade,
+      objetivo: ativo.objetivo,
+      caloriasCalculadas: data.caloriasCalculadas,
+      bmr: data.bmr,
+      tdee: data.tdee,
+      ajusteAplicado: data.ajusteAplicado,
+      plano: data.plano,
+      status: "ativo",
+      pesoFinal: null,
+      encerradoEm: null,
+    });
+
+    await setDoc(doc(db, "users", window._state.user.uid), { dailyGoal: data.caloriasCalculadas }, { merge: true });
+    window._state.dailyGoal = data.caloriasCalculadas;
+    document.getElementById("dailyGoalInput").value = data.caloriasCalculadas;
+
+    document.getElementById("planoPesoCheckin").value = "";
+    statusEl.textContent = "";
+    loadPlanoView();
+    loadWeightHistory();
+    loadHomeWeightWidget();
+    loadTodayMeals();
+  } catch (e) {
+    statusEl.textContent = "Erro: " + e.message;
+  }
+};
 
 // ---------- Painel do afiliado ----------
 async function loadAffiliatePanel() {
