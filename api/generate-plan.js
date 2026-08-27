@@ -55,12 +55,12 @@ function avaliarProgresso(cicloAnterior, calorias, objetivo) {
     if (delta <= -0.3) {
       return {
         calorias,
-        ajusteAplicado: `Você perdeu ${Math.abs(delta).toFixed(1)} kg nos últimos 15 dias — o ritmo está bom, mantivemos a mesma meta calórica.`,
+        ajusteAplicado: `Você perdeu ${Math.abs(delta).toFixed(1)} kg na última semana — o ritmo está bom, mantivemos a mesma meta calórica.`,
       };
     }
     return {
       calorias: calorias - 150,
-      ajusteAplicado: `Seu peso quase não mudou nos últimos 15 dias (${delta >= 0 ? "+" : ""}${delta.toFixed(1)} kg) — reduzimos um pouco mais as calorias pra retomar o progresso.`,
+      ajusteAplicado: `Seu peso quase não mudou na última semana (${delta >= 0 ? "+" : ""}${delta.toFixed(1)} kg) — reduzimos um pouco mais as calorias pra retomar o progresso.`,
     };
   }
 
@@ -68,18 +68,18 @@ function avaliarProgresso(cicloAnterior, calorias, objetivo) {
     if (delta >= 0.3) {
       return {
         calorias,
-        ajusteAplicado: `Você ganhou ${delta.toFixed(1)} kg nos últimos 15 dias — o ritmo está bom, mantivemos a mesma meta calórica.`,
+        ajusteAplicado: `Você ganhou ${delta.toFixed(1)} kg na última semana — o ritmo está bom, mantivemos a mesma meta calórica.`,
       };
     }
     return {
       calorias: calorias + 150,
-      ajusteAplicado: `Seu peso quase não mudou nos últimos 15 dias (${delta >= 0 ? "+" : ""}${delta.toFixed(1)} kg) — aumentamos um pouco mais as calorias pra favorecer o ganho.`,
+      ajusteAplicado: `Seu peso quase não mudou na última semana (${delta >= 0 ? "+" : ""}${delta.toFixed(1)} kg) — aumentamos um pouco mais as calorias pra favorecer o ganho.`,
     };
   }
 
   return {
     calorias,
-    ajusteAplicado: `Seu peso variou ${delta >= 0 ? "+" : ""}${delta.toFixed(1)} kg nos últimos 15 dias — mantivemos o cardápio equilibrado.`,
+    ajusteAplicado: `Seu peso variou ${delta >= 0 ? "+" : ""}${delta.toFixed(1)} kg na última semana — mantivemos o cardápio equilibrado.`,
   };
 }
 
@@ -117,7 +117,7 @@ ${objetivoTexto}
 
 Monte exatamente 3 cardápios-modelo DIFERENTES entre si (chame-os de "Opção A",
 "Opção B" e "Opção C"), cada um com 4 refeições: café da manhã, almoço, lanche da
-tarde e jantar. Esses 3 cardápios vão se alternar ao longo dos próximos 15 dias —
+tarde e jantar. Esses 3 cardápios vão se alternar ao longo da semana —
 a ideia é dar variedade real (pratos, proteínas e modos de preparo diferentes em
 cada opção) sem precisar inventar 7 cardápios diferentes, porque senão a pessoa
 cansa de tanta coisa nova. A soma diária de calorias de CADA uma das 3 opções deve
