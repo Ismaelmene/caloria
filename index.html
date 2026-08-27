@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Calorias por Foto</title>
+<title>Minha Nutri</title>
 <link rel="manifest" href="/manifest.json" />
 <style>
   :root {
@@ -36,55 +36,87 @@
     z-index: 10;
   }
   header h1 { font-size: 16px; margin: 0; font-weight: 700; }
-  #menuBtn {
+  .header-icon-btn {
     background: transparent;
     border: 1px solid var(--border);
     color: var(--text);
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  #drawerOverlay {
+  main { max-width: 480px; margin: 0 auto; padding: 16px 14px 92px; }
+  .bottom-nav {
     position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 100;
-  }
-  #drawer {
-    position: fixed;
-    top: 0;
     left: 0;
+    right: 0;
     bottom: 0;
-    width: 250px;
-    max-width: 80vw;
-    background: var(--panel);
-    border-right: 1px solid var(--border);
-    z-index: 101;
-    padding: 18px 14px;
+    z-index: 50;
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
   }
-  #drawer .drawer-title { font-weight: 700; font-size: 15px; margin: 4px 8px 14px; }
-  #drawer button {
-    text-align: left;
+  .bottom-nav button {
+    flex: 1;
     background: transparent;
     border: none;
-    color: var(--text);
-    padding: 10px 10px;
-    border-radius: 8px;
-    font-size: 14px;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 2px;
+    border-radius: 10px;
     cursor: pointer;
+    font-family: inherit;
   }
-  #drawer button:hover { background: #0d141b; }
-  #drawer button.active { background: var(--accent); color: #04140c; font-weight: 700; }
-  #drawer button.logout { color: var(--danger); margin-top: auto; }
-  main { max-width: 480px; margin: 0 auto; padding: 16px 14px 60px; }
+  .bottom-nav button .bn-icon { font-size: 20px; line-height: 1; }
+  .bottom-nav button .bn-label { font-size: 10px; font-weight: 600; }
+  .bottom-nav button.active { color: var(--accent); }
+  .quick-actions { display: flex; gap: 10px; margin-bottom: 14px; }
+  .quick-action-btn {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 8px;
+    color: var(--text);
+    text-align: center;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .quick-action-btn:active { transform: scale(0.97); }
+  .quick-action-btn .qa-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+  .quick-action-btn .qa-label { font-size: 12px; font-weight: 700; }
+  .quick-action-btn.accent { border-color: var(--accent); }
+  .cardapio-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+  }
+  .cardapio-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 9px 6px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .cardapio-tab.active { background: var(--accent); color: #04140c; }
   .card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -247,21 +279,70 @@
     cursor: pointer;
     padding: 0;
   }
+  .chat-window {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 40vh;
+    margin-bottom: 12px;
+  }
+  .chat-bubble {
+    max-width: 82%;
+    padding: 10px 13px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .chat-bubble.user {
+    align-self: flex-end;
+    background: var(--accent);
+    color: #04140c;
+    border-bottom-right-radius: 4px;
+  }
+  .chat-bubble.assistant {
+    align-self: flex-start;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-suggestions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chat-suggestion {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input-row input { margin: 0; }
+  .chat-disclaimer { font-size: 11px; color: var(--muted); text-align: center; margin: -4px 0 14px; }
+  .budget-alert {
+    background: rgba(255,107,107,0.1);
+    border: 1px solid var(--danger);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .budget-alert strong { color: var(--danger); }
+  .credit-pack {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    background: #0d141b;
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <button id="menuBtn" onclick="openDrawer()">☰</button>
-  <h1>Calorias por Foto 🇧🇷</h1>
-  <span style="width:38px;"></span>
+  <h1>Minha Nutri</h1>
+  <div id="headerActions" style="display:flex; gap:8px;"></div>
 </header>
-
-<div id="drawerOverlay" class="hidden" onclick="closeDrawer()"></div>
-<div id="drawer" class="hidden">
-  <div class="drawer-title">Menu</div>
-  <div id="drawerNav"></div>
-</div>
 
 <main>
 
@@ -316,6 +397,17 @@
 
     <div id="subBanner" class="card" style="background:#0d141b;"></div>
 
+    <div class="quick-actions">
+      <button type="button" class="quick-action-btn accent" onclick="showView('registrar')">
+        <span class="qa-icon">📸</span>
+        <span class="qa-label">Análise de Prato</span>
+      </button>
+      <button type="button" class="quick-action-btn" onclick="showView('chat')">
+        <span class="qa-icon">💬</span>
+        <span class="qa-label">Falar com a Nutri</span>
+      </button>
+    </div>
+
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <strong style="font-size:14px;">⚖️ Seu peso</strong>
@@ -341,7 +433,12 @@
 
   <!-- ---------------- PLANO 15 DIAS ---------------- -->
   <section id="view-plano" class="card hidden" style="background:transparent; border:none; padding:0;">
-    <h2 style="margin:0 0 14px;">Plano semanal</h2>
+    <h2 style="margin:0 0 6px;">Planejamento Metabólico</h2>
+
+    <div class="cardapio-tabs">
+      <button type="button" class="cardapio-tab" data-tab="plano" onclick="showView('plano')">Planejamento Metabólico</button>
+      <button type="button" class="cardapio-tab" data-tab="receita" onclick="showView('receita')">Cozinha Inteligente</button>
+    </div>
 
     <div id="planoFormBox" class="option-card hidden">
       <h3>Vamos montar seu cardápio da semana</h3>
@@ -420,7 +517,7 @@
 
   <!-- ---------------- REGISTRAR PRATO ---------------- -->
   <section id="view-registrar" class="card hidden">
-    <h2>Registrar prato</h2>
+    <h2>Análise de Prato</h2>
     <label>Foto do prato</label>
     <input type="file" accept="image/*" capture="environment" id="photoInput" onchange="onPhotoSelected(event)" />
     <img id="photoPreview" />
@@ -429,9 +526,40 @@
     <div id="analyzeResult"></div>
   </section>
 
+  <!-- ---------------- FALAR COM A NUTRI (CHAT) ---------------- -->
+  <section id="view-chat" class="card hidden" style="background:transparent; border:none; padding:0;">
+    <h2 style="margin:0 0 14px;">Falar com a Nutri</h2>
+
+    <div id="chatLimiteBox" class="budget-alert hidden">
+      <strong>Você atingiu seu limite mensal de IA.</strong>
+      <p class="muted" style="margin:6px 0 10px;">Compre créditos extras pra continuar conversando.</p>
+      <button class="primary" onclick="comprarCreditos(1)">Comprar 10 créditos — R$ 10</button>
+    </div>
+
+    <div id="chatWindow" class="chat-window"></div>
+
+    <div id="chatSuggestions" class="chat-suggestions">
+      <button type="button" class="chat-suggestion" onclick="enviarSugestaoChat(this)">Substituí um alimento do plano, tudo bem?</button>
+      <button type="button" class="chat-suggestion" onclick="enviarSugestaoChat(this)">Estou com vontade de doce, o que faço?</button>
+      <button type="button" class="chat-suggestion" onclick="enviarSugestaoChat(this)">Como ajusto minha alimentação pré-treino?</button>
+      <button type="button" class="chat-suggestion" onclick="enviarSugestaoChat(this)">Posso beber álcool no meu plano?</button>
+    </div>
+
+    <div class="chat-input-row">
+      <input id="chatInput" placeholder="Digite sua dúvida..." onkeydown="if(event.key==='Enter') enviarMensagemChat();" />
+      <button class="primary" style="white-space:nowrap;" onclick="enviarMensagemChat()">Enviar</button>
+    </div>
+    <p class="chat-disclaimer">Orientações geradas por IA — não substituem uma consulta com nutricionista.</p>
+  </section>
+
   <!-- ---------------- GERAR RECEITA ---------------- -->
   <section id="view-receita" class="card hidden" style="background:transparent; border:none; padding:0;">
-    <h2 style="margin:0 0 14px;">Gerar receita</h2>
+    <h2 style="margin:0 0 6px;">Cozinha Inteligente</h2>
+
+    <div class="cardapio-tabs">
+      <button type="button" class="cardapio-tab" data-tab="plano" onclick="showView('plano')">Planejamento Metabólico</button>
+      <button type="button" class="cardapio-tab" data-tab="receita" onclick="showView('receita')">Cozinha Inteligente</button>
+    </div>
 
     <div class="option-card">
       <h3>🧊 Opção 1 — Tenho estes ingredientes em casa</h3>
@@ -480,7 +608,7 @@
 
   <!-- ---------------- MEU PESO ---------------- -->
   <section id="view-peso" class="card hidden">
-    <h2>Meu peso</h2>
+    <h2>Evolução Corporal</h2>
     <p class="muted">Registre seu peso a cada poucos dias para acompanhar sua evolução.</p>
 
     <label>Peso atual (kg)</label>
@@ -533,6 +661,16 @@
       <div class="stat"><div class="value" id="adminTotalCommissions">R$ 0</div><div class="label">comissões pagas/a pagar</div></div>
     </div>
 
+    <h2 style="margin-top:20px;">Uso de IA / orçamento</h2>
+    <div id="adminBudgetAlert" class="budget-alert hidden">
+      <strong>Clientes perto do limite:</strong>
+      <div id="adminBudgetAlertList" style="margin-top:6px;"></div>
+    </div>
+    <table id="adminBudgetTable">
+      <thead><tr><th>Usuário</th><th>Gasto no ciclo</th><th>Créditos extras</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
     <h2 style="margin-top:20px;">Afiliados</h2>
     <table id="adminAffiliatesTable">
       <thead><tr><th>Nome</th><th>Código</th><th>Comissão</th><th>Indicados ativos</th><th>Total ganho</th></tr></thead>
@@ -559,13 +697,15 @@
 
 </main>
 
+<nav id="bottomNav" class="bottom-nav hidden"></nav>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc, query, where, getDocs, orderBy, Timestamp, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc, query, where, getDocs, orderBy, limit, increment, Timestamp, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // ⚠️ Cole aqui a configuração do SEU projeto Firebase
@@ -587,52 +727,82 @@ const db = getFirestore(app);
 window._state = { user: null, role: null, idToken: null };
 
 // ---------- Navegação ----------
-const NAV_ITEMS = {
-  app: { label: "🏠 Meu diário", roles: ["user", "affiliate", "admin"] },
-  plano: { label: "🗓️ Plano semanal", roles: ["user", "affiliate", "admin"] },
-  registrar: { label: "📸 Registrar prato", roles: ["user", "affiliate", "admin"] },
-  receita: { label: "🍳 Gerar receita", roles: ["user", "affiliate", "admin"] },
-  peso: { label: "⚖️ Meu peso", roles: ["user", "affiliate", "admin"] },
-  afiliado: { label: "Painel afiliado", roles: ["affiliate", "admin"] },
-  admin: { label: "Painel admin", roles: ["admin"] },
+// Os 4 pilares da barra inferior. "Painel afiliado" fica fora da navegação
+// por enquanto (o recurso continua funcionando por trás, só não aparece pra
+// ninguém) — reative adicionando de volta aqui se for retomar com influencers.
+const BOTTOM_NAV = [
+  { key: "app", icon: "🏠", label: "Início" },
+  { key: "plano", icon: "🍽️", label: "Cardápio" },
+  { key: "chat", icon: "💬", label: "Chat" },
+  { key: "peso", icon: "📈", label: "Evolução" },
+];
+
+// Algumas telas não têm botão próprio na barra inferior (são acessadas por
+// atalho) mas ainda precisam "acender" o pilar mais próximo quando abertas.
+const VIEW_TO_BOTTOM_KEY = {
+  app: "app",
+  registrar: "app",
+  plano: "plano",
+  receita: "plano",
+  chat: "chat",
+  peso: "peso",
 };
 
-function renderNav() {
-  const nav = document.getElementById("drawerNav");
+function renderBottomNav() {
+  const nav = document.getElementById("bottomNav");
   nav.innerHTML = "";
-  if (!window._state.user) return;
-  Object.entries(NAV_ITEMS).forEach(([key, item]) => {
-    if (!item.roles.includes(window._state.role)) return;
+  if (!window._state.user) {
+    nav.classList.add("hidden");
+    return;
+  }
+  nav.classList.remove("hidden");
+  BOTTOM_NAV.forEach((item) => {
     const btn = document.createElement("button");
-    btn.textContent = item.label;
-    btn.dataset.navKey = key;
-    btn.onclick = () => showView(key);
+    btn.dataset.navKey = item.key;
+    btn.innerHTML = `<span class="bn-icon">${item.icon}</span><span class="bn-label">${item.label}</span>`;
+    btn.onclick = () => showView(item.key);
     nav.appendChild(btn);
   });
-  const logoutBtn = document.createElement("button");
-  logoutBtn.textContent = "Sair";
-  logoutBtn.className = "logout";
-  logoutBtn.onclick = () => auth.signOut();
-  nav.appendChild(logoutBtn);
 }
 
-window.openDrawer = function () {
-  document.getElementById("drawerOverlay").classList.remove("hidden");
-  document.getElementById("drawer").classList.remove("hidden");
-};
-window.closeDrawer = function () {
-  document.getElementById("drawerOverlay").classList.add("hidden");
-  document.getElementById("drawer").classList.add("hidden");
-};
+function renderHeaderActions() {
+  const el = document.getElementById("headerActions");
+  el.innerHTML = "";
+  if (!window._state.user) return;
+  if (window._state.role === "admin") {
+    const adminBtn = document.createElement("button");
+    adminBtn.className = "header-icon-btn";
+    adminBtn.textContent = "⚙️";
+    adminBtn.title = "Painel admin";
+    adminBtn.onclick = () => showView("admin");
+    el.appendChild(adminBtn);
+  }
+  const logoutBtn = document.createElement("button");
+  logoutBtn.className = "header-icon-btn";
+  logoutBtn.textContent = "⎋";
+  logoutBtn.title = "Sair";
+  logoutBtn.onclick = () => auth.signOut();
+  el.appendChild(logoutBtn);
+}
 
 window.showView = function (name) {
   document.querySelectorAll("main > section").forEach((s) => s.classList.add("hidden"));
   document.getElementById(`view-${name}`).classList.remove("hidden");
-  document.querySelectorAll("#drawerNav button").forEach((b) => b.classList.remove("active"));
-  document.querySelector(`#drawerNav button[data-nav-key="${name}"]`)?.classList.add("active");
-  closeDrawer();
+
+  document.querySelectorAll("#bottomNav button").forEach((b) => b.classList.remove("active"));
+  const bottomKey = VIEW_TO_BOTTOM_KEY[name];
+  if (bottomKey) {
+    document.querySelector(`#bottomNav button[data-nav-key="${bottomKey}"]`)?.classList.add("active");
+  }
+
+  // sincroniza os dois conjuntos de abas "Cardápio" (um em cada tela)
+  document.querySelectorAll(".cardapio-tab").forEach((b) => {
+    b.classList.toggle("active", b.dataset.tab === name);
+  });
+
   if (name === "app") { loadTodayMeals(); loadHomeWeightWidget(); }
   if (name === "plano") loadPlanoView();
+  if (name === "chat") loadChatView();
   if (name === "peso") loadWeightHistory();
   if (name === "afiliado") loadAffiliatePanel();
   if (name === "admin") loadAdminPanel();
@@ -703,12 +873,43 @@ async function authHeaders() {
   return { "content-type": "application/json", Authorization: `Bearer ${token}` };
 }
 
+// ---------- Limite de IA / créditos extras ----------
+// Usado sempre que uma função de IA (foto, receita, plano, chat) devolve 402
+// "limite_atingido" — mostra um aviso com botão pra comprar créditos, no lugar
+// da mensagem de erro genérica.
+function limiteAtingidoHTML(data) {
+  const msg = (data && data.mensagem) || "Você atingiu seu limite mensal de IA. Compre créditos extras pra continuar usando.";
+  return `
+    <div class="budget-alert">
+      <strong>Limite mensal de IA atingido</strong>
+      <p class="muted" style="margin:6px 0 10px;">${msg}</p>
+      <button class="primary" onclick="comprarCreditos(1)">Comprar 10 créditos — R$ 10</button>
+    </div>
+  `;
+}
+
+window.comprarCreditos = async function (pacotes) {
+  try {
+    const res = await fetch("/api/create-credit-payment", {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify({ pacotes: pacotes || 1 }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "erro ao iniciar compra de créditos");
+    window.location.href = data.checkoutUrl;
+  } catch (e) {
+    alert("Erro ao iniciar compra de créditos: " + e.message);
+  }
+};
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window._state.user = null;
     document.querySelectorAll("main > section").forEach((s) => s.classList.add("hidden"));
     document.getElementById("view-login").classList.remove("hidden");
-    renderNav();
+    renderBottomNav();
+    renderHeaderActions();
     return;
   }
   window._state.user = user;
@@ -721,7 +922,8 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById("dailyGoalInput").value = window._state.dailyGoal;
   setActiveChip("objetivoChips", window._state.objetivo);
 
-  renderNav();
+  renderBottomNav();
+  renderHeaderActions();
   showView("app");
   renderSubscriptionBanner(userDoc.exists() ? userDoc.data() : {});
 });
@@ -769,7 +971,7 @@ function renderSubscriptionBanner(userData) {
   } else {
     banner.innerHTML = `
       <p style="margin:0 0 10px;">Você ainda não tem uma assinatura ativa.</p>
-      <button class="primary" onclick="startCheckout()">Assinar agora — R$ 29,90/mês</button>
+      <button class="primary" onclick="startCheckout()">Assinar agora — R$ 50/mês</button>
       <p class="error" id="checkoutError" style="margin-top:8px;"></p>
     `;
   }
@@ -823,6 +1025,11 @@ window.analyzePhoto = async function () {
       body: JSON.stringify({ imageBase64: selectedPhotoBase64, mediaType: selectedPhotoMediaType }),
     });
     const data = await res.json();
+    if (res.status === 402) {
+      statusEl.textContent = "";
+      resultEl.innerHTML = limiteAtingidoHTML(data);
+      return;
+    }
     if (!res.ok) throw new Error(data.error || "erro ao analisar");
 
     statusEl.textContent = "";
@@ -1009,6 +1216,11 @@ window.generateRecipe = async function (modo) {
     } catch {
       throw new Error(`erro ao gerar receita (status ${res.status})`);
     }
+    if (res.status === 402) {
+      statusEl.textContent = "";
+      resultEl.innerHTML = limiteAtingidoHTML(data);
+      return;
+    }
     if (!res.ok) {
       throw new Error((data.error || "erro ao gerar receita") + (data.detalhe ? ": " + data.detalhe : ""));
     }
@@ -1018,6 +1230,128 @@ window.generateRecipe = async function (modo) {
   } catch (e) {
     statusEl.textContent = "Erro: " + e.message;
   }
+};
+
+// ---------- Falar com a Nutri (chat) ----------
+let _chatHistorico = []; // últimas mensagens em memória, pra mandar como contexto pra IA
+let _chatEnviando = false;
+
+function montarPerfilResumoChat() {
+  const s = window._state;
+  const partes = [];
+  if (s.objetivo) partes.push(`objetivo: ${s.objetivo}`);
+  if (s.dailyGoal) partes.push(`meta diária: ${s.dailyGoal} kcal`);
+  const consumidoHoje = document.getElementById("todayCalories")?.textContent;
+  if (consumidoHoje) partes.push(`consumido hoje: ${consumidoHoje} kcal`);
+  const pesoAtual = document.getElementById("weightCurrent")?.textContent;
+  if (pesoAtual && pesoAtual !== "—") partes.push(`peso mais recente: ${pesoAtual} kg`);
+  return partes.join("; ");
+}
+
+function chatBubbleHTML(role, text) {
+  const cls = role === "user" ? "user" : "assistant";
+  return `<div class="chat-bubble ${cls}">${text.replace(/\n/g, "<br>")}</div>`;
+}
+
+function scrollChatToEnd() {
+  const win = document.getElementById("chatWindow");
+  win.scrollTop = win.scrollHeight;
+}
+
+async function loadChatView() {
+  const win = document.getElementById("chatWindow");
+  const limiteBox = document.getElementById("chatLimiteBox");
+  limiteBox.classList.add("hidden");
+  win.innerHTML = `<p class="muted">Carregando conversa...</p>`;
+
+  const snap = await getDocs(
+    query(collection(db, "users", window._state.user.uid, "chatMessages"), orderBy("createdAt", "desc"), limit(30))
+  );
+  const mensagens = [];
+  snap.forEach((d) => mensagens.push(d.data()));
+  mensagens.reverse(); // veio do mais novo pro mais antigo, aqui vira ordem cronológica
+
+  _chatHistorico = mensagens.map((m) => ({ role: m.role, text: m.text }));
+
+  if (mensagens.length === 0) {
+    win.innerHTML = `<p class="muted">Manda sua primeira pergunta pra Nutri, ou use uma das sugestões abaixo.</p>`;
+  } else {
+    win.innerHTML = mensagens.map((m) => chatBubbleHTML(m.role, m.text)).join("");
+    scrollChatToEnd();
+  }
+}
+
+async function persistirMensagemChat(role, text) {
+  await addDoc(collection(db, "users", window._state.user.uid, "chatMessages"), {
+    role,
+    text,
+    createdAt: serverTimestamp(),
+  });
+}
+
+async function enviarTextoChat(texto) {
+  const mensagem = (texto || "").trim();
+  if (!mensagem || _chatEnviando) return;
+  _chatEnviando = true;
+
+  const win = document.getElementById("chatWindow");
+  const inputEl = document.getElementById("chatInput");
+  const limiteBox = document.getElementById("chatLimiteBox");
+  const vazio = win.querySelector(".muted");
+  if (vazio) win.innerHTML = "";
+
+  win.insertAdjacentHTML("beforeend", chatBubbleHTML("user", mensagem));
+  win.insertAdjacentHTML("beforeend", `<div class="chat-bubble assistant" id="chatTyping">Digitando...</div>`);
+  scrollChatToEnd();
+  inputEl.value = "";
+  inputEl.disabled = true;
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify({
+        mensagem,
+        historico: _chatHistorico,
+        perfilResumo: montarPerfilResumoChat(),
+      }),
+    });
+    const data = await res.json();
+    document.getElementById("chatTyping")?.remove();
+
+    if (res.status === 402) {
+      limiteBox.classList.remove("hidden");
+      limiteBox.querySelector("p").textContent = data.mensagem || "Compre créditos extras pra continuar conversando.";
+      return;
+    }
+    if (!res.ok) throw new Error(data.error || "erro ao conversar com a Nutri");
+
+    win.insertAdjacentHTML("beforeend", chatBubbleHTML("assistant", data.resposta));
+    scrollChatToEnd();
+
+    _chatHistorico.push({ role: "user", text: mensagem });
+    _chatHistorico.push({ role: "assistant", text: data.resposta });
+    _chatHistorico = _chatHistorico.slice(-10);
+
+    await persistirMensagemChat("user", mensagem);
+    await persistirMensagemChat("assistant", data.resposta);
+  } catch (e) {
+    document.getElementById("chatTyping")?.remove();
+    win.insertAdjacentHTML("beforeend", `<p class="muted" style="color:var(--danger);">Erro: ${e.message}</p>`);
+  } finally {
+    _chatEnviando = false;
+    inputEl.disabled = false;
+    inputEl.focus();
+  }
+}
+
+window.enviarMensagemChat = function () {
+  const inputEl = document.getElementById("chatInput");
+  enviarTextoChat(inputEl.value);
+};
+
+window.enviarSugestaoChat = function (btn) {
+  enviarTextoChat(btn.textContent);
 };
 
 // ---------- Meu peso ----------
@@ -1262,6 +1596,10 @@ window.gerarPlano = async function () {
     } catch {
       throw new Error(`erro ao gerar plano (status ${res.status})`);
     }
+    if (res.status === 402) {
+      statusEl.innerHTML = limiteAtingidoHTML(data);
+      return;
+    }
     if (!res.ok) {
       throw new Error((data.error || "erro ao gerar plano") + (data.detalhe ? ": " + data.detalhe : ""));
     }
@@ -1337,6 +1675,10 @@ window.atualizarCiclo = async function () {
       data = await res.json();
     } catch {
       throw new Error(`erro ao atualizar plano (status ${res.status})`);
+    }
+    if (res.status === 402) {
+      statusEl.innerHTML = limiteAtingidoHTML(data);
+      return;
     }
     if (!res.ok) {
       throw new Error((data.error || "erro ao atualizar plano") + (data.detalhe ? ": " + data.detalhe : ""));
@@ -1446,6 +1788,60 @@ window.copyAffiliateLink = function () {
 };
 
 // ---------- Painel admin ----------
+// Precisa bater com o valor de ORCAMENTO_MENSAL_BRL configurado no servidor
+// (lib/budget.js / variável de ambiente ORCAMENTO_MENSAL_BRL) — só usado aqui
+// pra decidir quem entra no alerta de "perto do limite".
+const ORCAMENTO_MENSAL_BRL_ADMIN = 25;
+
+function renderAdminBudgetTable(usersSnap) {
+  const tbody = document.querySelector("#adminBudgetTable tbody");
+  tbody.innerHTML = "";
+  const pertoDoLimite = [];
+
+  usersSnap.forEach((d) => {
+    const u = d.data();
+    const uid = d.id;
+    const gasto = u.budgetSpentBRL || 0;
+    const creditos = u.extraCredits || 0;
+    const email = u.email || uid.slice(0, 10) + "...";
+    const pct = Math.min(100, Math.round((gasto / ORCAMENTO_MENSAL_BRL_ADMIN) * 100));
+
+    if (gasto >= ORCAMENTO_MENSAL_BRL_ADMIN * 0.8 && creditos <= 2) {
+      pertoDoLimite.push(`${email} (gasto: R$ ${gasto.toFixed(2)}, créditos: ${creditos})`);
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${email}</td>
+      <td>R$ ${gasto.toFixed(2)} / R$ ${ORCAMENTO_MENSAL_BRL_ADMIN} (${pct}%)</td>
+      <td>${creditos}</td>
+      <td style="white-space:nowrap;">
+        <button class="secondary" style="padding:4px 8px;" onclick="ajustarCreditos('${uid}', 10)">+10</button>
+        <button class="secondary" style="padding:4px 8px;" onclick="ajustarCreditos('${uid}', -10)">-10</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const alertBox = document.getElementById("adminBudgetAlert");
+  const alertList = document.getElementById("adminBudgetAlertList");
+  if (pertoDoLimite.length > 0) {
+    alertBox.classList.remove("hidden");
+    alertList.innerHTML = pertoDoLimite.map((s) => `<p class="muted" style="margin:2px 0;">${s}</p>`).join("");
+  } else {
+    alertBox.classList.add("hidden");
+  }
+}
+
+window.ajustarCreditos = async function (uid, delta) {
+  try {
+    await updateDoc(doc(db, "users", uid), { extraCredits: increment(delta) });
+    loadAdminPanel();
+  } catch (e) {
+    alert("Erro ao ajustar créditos: " + e.message);
+  }
+};
+
 async function loadAdminPanel() {
   const usersSnap = await getDocs(collection(db, "users"));
   let activeCount = 0;
@@ -1454,6 +1850,7 @@ async function loadAdminPanel() {
   });
   document.getElementById("adminTotalUsers").textContent = usersSnap.size;
   document.getElementById("adminTotalActive").textContent = activeCount;
+  renderAdminBudgetTable(usersSnap);
 
   const paymentsSnap = await getDocs(collection(db, "payments"));
   let revenue = 0;
