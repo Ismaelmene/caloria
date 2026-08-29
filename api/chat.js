@@ -1,71 +1,112 @@
-const { admin, db } = require("./firebaseAdmin");
+const { getAuthedUser } = require("../lib/firebaseAdmin");
+const { verificarSaldo, registrarGasto, ORCAMENTO_MENSAL_BRL } = require("../lib/budget");
 
-// Preço por milhão de tokens da Claude, em dólar (padrão da família Sonnet).
-// Ajuste aqui (ou pelas variáveis de ambiente da Vercel) se a Anthropic mudar
-// os preços do modelo usado — veja a variável MODEL nos outros arquivos.
-const PRECO_INPUT_USD_MI = Number(process.env.PRECO_INPUT_USD_MI || 3.0);
-const PRECO_OUTPUT_USD_MI = Number(process.env.PRECO_OUTPUT_USD_MI || 15.0);
+const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5";
 
-// Cotação dólar → real usada só pra converter o custo da IA (a Anthropic
-// cobra em dólar). Não buscamos uma cotação em tempo real — ajuste esse valor
-// de vez em quando pela variável de ambiente USD_BRL_RATE na Vercel.
-const USD_BRL = Number(process.env.USD_BRL_RATE || 5.5);
+function buildSystemPrompt(perfilResumo) {
+  return `Você é a "Nutri", a assistente de nutrição por IA do app Minha Nutri.
+Converse em português do Brasil, de forma acolhedora, direta e prática — como uma
+nutricionista de confiança mandando mensagem no WhatsApp, não como uma bula.
 
-// Orçamento mensal de IA incluso na assinatura, em reais.
-const ORCAMENTO_MENSAL_BRL = Number(process.env.ORCAMENTO_MENSAL_BRL || 25);
+Use como referência nutricional a TACO (Tabela Brasileira de Composição de
+Alimentos). Respostas curtas e objetivas (no máximo 2-3 parágrafos curtos, ou uma
+lista curta quando fizer sentido).
 
-// Quantos créditos cada pacote de R$10 de compra avulsa libera.
-const CREDITOS_POR_PACOTE = Number(process.env.CREDITOS_POR_PACOTE || 10);
-const PRECO_PACOTE_BRL = Number(process.env.PRECO_PACOTE_BRL || 10);
+${perfilResumo ? `Contexto sobre esta pessoa (use pra personalizar a resposta):\n${perfilResumo}` : ""}
 
-// Calcula, em reais, quanto uma resposta da Claude custou de verdade, com
-// base na contagem real de tokens que a própria Anthropic devolve em toda
-// resposta (campo "usage").
-function custoBRL(usage) {
-  const inputTokens = (usage && usage.input_tokens) || 0;
-  const outputTokens = (usage && usage.output_tokens) || 0;
-  const custoUsd = (inputTokens / 1e6) * PRECO_INPUT_USD_MI + (outputTokens / 1e6) * PRECO_OUTPUT_USD_MI;
-  return custoUsd * USD_BRL;
+Se a pergunta envolver um sintoma físico sério, uma condição de saúde específica,
+ou fugir do escopo de alimentação/nutrição, oriente com naturalidade a buscar um
+médico ou nutricionista humano — sem soar como aviso legal robotizado. Você é uma
+ferramenta de apoio baseada em IA, não substitui uma consulta profissional.`;
 }
 
-// Verifica se o usuário ainda tem saldo — orçamento mensal (R$) OU créditos
-// avulsos — antes de gastar com uma chamada de IA. Não debita nada ainda,
-// só checa. Chame isso ANTES de consultar a Claude.
-async function verificarSaldo(uid) {
-  const ref = db.collection("users").doc(uid);
-  const snap = await ref.get();
-  const d = snap.exists ? snap.data() || {} : {};
-  const gasto = d.budgetSpentBRL || 0;
-  const creditos = d.extraCredits || 0;
-  const dentroDoOrcamento = gasto < ORCAMENTO_MENSAL_BRL;
+module.exports = async (req, res) => {
+  try {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "método não permitido" });
+    }
 
-  return {
-    podeUsar: dentroDoOrcamento || creditos > 0,
-    usaraCredito: !dentroDoOrcamento,
-    gasto,
-    creditos,
-    ref,
-  };
-}
+    let user;
+    try {
+      user = await getAuthedUser(req);
+    } catch (authErr) {
+      console.error("Erro na autenticação:", authErr);
+      return res.status(500).json({
+        error: "falha ao verificar login",
+        detalhe: String(authErr && authErr.message ? authErr.message : authErr).slice(0, 300),
+      });
+    }
+    if (!user) {
+      return res.status(401).json({ error: "não autenticado" });
+    }
 
-// Debita o custo real depois de uma chamada à Claude bem-sucedida. Se o
-// usuário já tinha estourado o orçamento mensal, desconta 1 crédito avulso
-// em vez de (ou além de) somar ao gasto do mês.
-async function registrarGasto(ref, usage, usaraCredito) {
-  const custo = custoBRL(usage);
-  const updates = { budgetSpentBRL: admin.firestore.FieldValue.increment(custo) };
-  if (usaraCredito) {
-    updates.extraCredits = admin.firestore.FieldValue.increment(-1);
+    const { mensagem, historico, perfilResumo } = req.body || {};
+    if (!mensagem || !String(mensagem).trim()) {
+      return res.status(400).json({ error: "envie 'mensagem'" });
+    }
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({ error: "ANTHROPIC_API_KEY não configurada no servidor" });
+    }
+
+    const saldo = await verificarSaldo(user.uid);
+    if (!saldo.podeUsar) {
+      return res.status(402).json({
+        error: "limite_atingido",
+        mensagem: "Você atingiu seu limite mensal de IA. Compre créditos extras pra continuar conversando com a Nutri.",
+        gasto: saldo.gasto,
+        orcamento: ORCAMENTO_MENSAL_BRL,
+      });
+    }
+
+    // histórico vem do front-end já recortado (últimas mensagens da conversa);
+    // limitamos de novo aqui por segurança pra não deixar o contexto gigante
+    const mensagensAnthropic = Array.isArray(historico)
+      ? historico
+          .filter((m) => m && m.text && (m.role === "user" || m.role === "assistant"))
+          .slice(-10)
+          .map((m) => ({ role: m.role, content: String(m.text).slice(0, 2000) }))
+      : [];
+    mensagensAnthropic.push({ role: "user", content: String(mensagem).slice(0, 2000) });
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 700,
+        system: buildSystemPrompt(perfilResumo || ""),
+        messages: mensagensAnthropic,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Erro Anthropic (chat):", response.status, errText);
+      return res.status(502).json({
+        error: "falha ao consultar a IA",
+        detalhe: `status ${response.status}: ${errText}`.slice(0, 300),
+      });
+    }
+
+    const data = await response.json();
+    const textBlock = (data.content || []).find((b) => b.type === "text");
+    const resposta = textBlock ? textBlock.text : "Desculpa, não consegui responder agora. Tenta de novo?";
+
+    const custo = await registrarGasto(saldo.ref, data.usage, saldo.usaraCredito);
+
+    return res.status(200).json({ resposta, usouCredito: saldo.usaraCredito, custo });
+  } catch (err) {
+    console.error("Erro no chat:", err);
+    return res.status(500).json({
+      error: "erro interno no chat",
+      detalhe: String(err && err.message ? err.message : err).slice(0, 300),
+    });
   }
-  await ref.set(updates, { merge: true });
-  return custo;
-}
-
-module.exports = {
-  custoBRL,
-  verificarSaldo,
-  registrarGasto,
-  ORCAMENTO_MENSAL_BRL,
-  CREDITOS_POR_PACOTE,
-  PRECO_PACOTE_BRL,
 };
+
+module.exports.config = { maxDuration: 30 };
