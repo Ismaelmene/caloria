@@ -19,6 +19,19 @@ function currentPeriod() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+// O Mercado Pago manda o tipo de pagamento em "payment_type_id" (ex: "pix",
+// "credit_card", "debit_card", "account_money", "ticket"...). Traduzimos pra
+// um rótulo simples que o painel admin exibe direto.
+function rotuloMetodoPagamento(payment) {
+  const tipo = payment.payment_type_id || "";
+  if (tipo === "pix") return "Pix";
+  if (tipo === "credit_card") return "Cartão de crédito";
+  if (tipo === "debit_card") return "Cartão de débito";
+  if (tipo === "ticket") return "Boleto";
+  if (tipo === "account_money") return "Saldo Mercado Pago";
+  return tipo || "—";
+}
+
 async function handleApprovedPayment(payment) {
   let ref = {};
   try {
@@ -52,11 +65,20 @@ async function handleApprovedPayment(payment) {
   }
 
   const userRef = db.collection("users").doc(uid);
+  const metodoPagamento = rotuloMetodoPagamento(payment);
+
+  // Só guardamos "primeiro pagamento" uma vez — se já existir, mantém o valor
+  // original em vez de sobrescrever a cada renovação.
+  const userSnapAntes = await userRef.get();
+  const jaTinhaPrimeiroPagamento = userSnapAntes.exists && userSnapAntes.data().firstPaymentAt;
+
   await userRef.set(
     {
       subscriptionStatus: "active",
       lastPaymentAt: admin.firestore.FieldValue.serverTimestamp(),
       lastPaymentAmount: payment.transaction_amount,
+      lastPaymentMethod: metodoPagamento,
+      ...(jaTinhaPrimeiroPagamento ? {} : { firstPaymentAt: admin.firestore.FieldValue.serverTimestamp() }),
       // cada pagamento aprovado da assinatura (inclusive a primeira cobrança)
       // marca o início de um novo ciclo de orçamento de IA de R$25 — assim o
       // reset acontece na data de renovação de cada pessoa, não num dia fixo
@@ -72,6 +94,7 @@ async function handleApprovedPayment(payment) {
     amount: payment.transaction_amount,
     period: currentPeriod(),
     referralCode: referralCode || null,
+    paymentMethod: metodoPagamento,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
