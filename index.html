@@ -354,7 +354,7 @@
     margin-bottom: 14px;
     border: 1px solid var(--border);
   }
-  .landing-hero h1 { font-size: 25px; line-height: 1.3; margin: 0 0 10px; }
+  .landing-hero h2.landing-headline { font-size: 25px; line-height: 1.3; margin: 0 0 10px; }
   .landing-hero p { color: var(--muted); font-size: 15px; margin: 0 0 18px; }
   .landing-trust { font-size: 12px; color: var(--muted); margin-top: 10px; }
   .landing-section { margin: 30px 0; }
@@ -378,6 +378,23 @@
   .landing-price-box .price small { font-size: 14px; font-weight: 600; color: var(--muted); }
   .auth-card { background: #0d141b; border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-top: 6px; }
   .landing-footnote { font-size: 11px; color: var(--muted); text-align: center; margin-top: 22px; }
+  .landing-kicker {
+    display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent);
+    background: rgba(62,207,142,0.12); border-radius: 999px; padding: 5px 12px; margin-bottom: 12px;
+  }
+  .pain-list { display: flex; flex-direction: column; gap: 10px; }
+  .pain-item {
+    background: #0d141b; border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; font-size: 14px; line-height: 1.4; display: flex; gap: 10px; align-items: flex-start;
+  }
+  .pain-x { color: var(--danger); font-weight: 800; flex: 0 0 auto; }
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .compare-table th, .compare-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+  .compare-table th:nth-child(2), .compare-table td:nth-child(2) { color: var(--muted); }
+  .compare-table th:nth-child(3), .compare-table td:nth-child(3) { color: var(--accent); font-weight: 600; }
+  .faq-item { background: #0d141b; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .faq-item summary { cursor: pointer; font-weight: 600; }
+  .faq-item p { margin: 8px 0 0; }
 </style>
 </head>
 <body>
@@ -394,28 +411,55 @@
 
     <div class="landing-hero">
       <img src="/hero-nutricao.jpg" alt="Prato saudável com frutas e vegetais" class="landing-hero-img" />
-      <h1>Sua nutricionista particular, 24 horas por dia</h1>
-      <p>Tire foto do prato, monte seu cardápio da semana e tire dúvidas na hora — sem esperar consulta marcada.</p>
+      <div class="landing-kicker">Chega de adivinhar o que colocar no prato</div>
+      <h2 class="landing-headline">Descubra as calorias do seu prato em segundos e tenha uma nutricionista particular 24 horas por dia</h2>
+      <p>Tire uma foto da sua comida e receba na hora quantas calorias, proteínas, carboidratos e gorduras ela tem. Monte seu cardápio da semana e tire qualquer dúvida sem esperar consulta marcada.</p>
       <button class="primary" onclick="irParaCadastro()">Quero começar agora</button>
-      <div class="landing-trust">Cancele quando quiser · Sem fidelidade</div>
+      <div class="landing-trust">Cancele quando quiser · Sem fidelidade · Pagamento seguro pelo Mercado Pago</div>
+    </div>
+
+    <div class="landing-section">
+      <h2>Isso parece com você?</h2>
+      <div class="pain-list">
+        <div class="pain-item"><span class="pain-x">✕</span> Você não faz ideia de quantas calorias tem o que acabou de comer.</div>
+        <div class="pain-item"><span class="pain-x">✕</span> Marcar consulta com nutricionista particular é caro, e a próxima é só daqui a um mês.</div>
+        <div class="pain-item"><span class="pain-x">✕</span> Bate a dúvida ou a vontade de fugir da dieta e não tem ninguém pra perguntar na hora.</div>
+        <div class="pain-item"><span class="pain-x">✕</span> Você já baixou uns 3 apps de dieta e desistiu de todos em uma semana.</div>
+      </div>
     </div>
 
     <div class="landing-section">
       <p class="muted" style="text-align:center; line-height:1.6;">
-        Você sabe o que "deveria" comer, mas na hora H bate a dúvida — ou a vontade de fugir da dieta. Marcar
-        consulta com nutricionista particular é caro e demorado, e entre uma consulta e outra você fica sem
-        ninguém pra perguntar. O Minha Nutri resolve isso: uma nutricionista sempre disponível, treinada
-        com a Tabela TACO, pelo preço de menos de dois lanches por mês.
+        O <strong style="color:var(--text);">Minha Nutri</strong> resolve isso: uma nutricionista particular sempre
+        disponível, treinada com a Tabela TACO, pelo preço de menos de dois lanches por mês.
       </p>
     </div>
 
     <div class="landing-section">
-      <h2>O que vem incluso</h2>
+      <h2>Tire a foto. Receba as calorias. Simples assim.</h2>
+      <div class="landing-steps">
+        <div class="landing-step">
+          <div class="num">1</div>
+          <div class="txt"><strong>Fotografe seu prato</strong><span>Direto do celular, antes de comer.</span></div>
+        </div>
+        <div class="landing-step">
+          <div class="num">2</div>
+          <div class="txt"><strong>Espere poucos segundos</strong><span>O app identifica o que tem no prato.</span></div>
+        </div>
+        <div class="landing-step">
+          <div class="num">3</div>
+          <div class="txt"><strong>Receba o resultado completo</strong><span>Calorias, proteínas, carboidratos e gorduras daquele prato, prontinho pra salvar no seu diário.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="landing-section">
+      <h2>O que vem incluso na sua assinatura</h2>
       <div class="feature-grid">
         <div class="feature-card">
           <span class="fc-icon">📸</span>
           <div class="fc-title">Análise de Prato</div>
-          <div class="fc-desc">Tire uma foto da sua comida e saiba as calorias e macros na hora.</div>
+          <div class="fc-desc">Tire uma foto da comida e receba na hora as calorias e os macros daquele prato.</div>
         </div>
         <div class="feature-card">
           <span class="fc-icon">💬</span>
@@ -432,6 +476,21 @@
           <div class="fc-title">Evolução Corporal</div>
           <div class="fc-desc">Acompanhe seu peso e veja seu progresso semana a semana.</div>
         </div>
+      </div>
+    </div>
+
+    <div class="landing-section">
+      <h2>Nutricionista particular x Minha Nutri</h2>
+      <div class="admin-table-wrap">
+        <table class="compare-table">
+          <thead><tr><th></th><th>Nutricionista particular</th><th>Minha Nutri</th></tr></thead>
+          <tbody>
+            <tr><td>Disponibilidade</td><td>Só no horário marcado</td><td>24 horas, todos os dias</td></tr>
+            <tr><td>Calorias do prato</td><td>Você calcula na mão</td><td>Foto e pronto</td></tr>
+            <tr><td>Tirar uma dúvida rápida</td><td>Espera a próxima consulta</td><td>Na hora, pelo chat</td></tr>
+            <tr><td>Custo mensal</td><td>Geralmente bem mais caro</td><td>R$ 50/mês</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -456,9 +515,29 @@
     <div class="landing-section">
       <div class="landing-price-box">
         <div class="price">R$ 50<small>/mês</small></div>
-        <p class="muted" style="margin:8px 0 16px;">Todos os recursos inclusos. Cancele quando quiser, direto pelo Mercado Pago.</p>
+        <p class="muted" style="margin:8px 0 16px;">Todos os recursos inclusos. Sem letras miúdas: cancele quando quiser, direto pelo Mercado Pago, sem multa.</p>
         <button class="primary" onclick="irParaCadastro()">Assinar agora</button>
       </div>
+    </div>
+
+    <div class="landing-section">
+      <h2>Perguntas frequentes</h2>
+      <details class="faq-item">
+        <summary>Preciso saber contar calorias pra usar?</summary>
+        <p class="muted">Não. É só fotografar o prato ou descrever o que vai comer — o app calcula tudo pra você.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Funciona pra qualquer objetivo?</summary>
+        <p class="muted">Sim. Dá pra usar tanto pra perder, manter ou ganhar peso — o cardápio e a meta diária se ajustam ao seu objetivo.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Posso cancelar quando quiser?</summary>
+        <p class="muted">Sim, direto pelo Mercado Pago, sem fidelidade e sem multa.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Isso substitui uma consulta com nutricionista de verdade?</summary>
+        <p class="muted">Não. É uma ferramenta de apoio pro seu dia a dia — pra questões clínicas ou mais específicas, procure um profissional.</p>
+      </details>
     </div>
 
     <div class="landing-section" id="authForm">
