@@ -50,6 +50,11 @@
     justify-content: center;
   }
   main { max-width: 480px; margin: 0 auto; padding: 16px 14px 92px; }
+  /* O painel admin é usado só por você, no computador — quando ele está
+     aberto, a tela usa uma largura bem maior, pra caber as tabelas com
+     mais informação sem espremer tudo numa coluna de celular. */
+  main:has(#view-admin:not(.hidden)) { max-width: 1180px; }
+  .admin-table-wrap { overflow-x: auto; margin-bottom: 8px; }
   .bottom-nav {
     position: fixed;
     left: 0;
@@ -661,15 +666,28 @@
       <div class="stat"><div class="value" id="adminTotalCommissions">R$ 0</div><div class="label">comissões pagas/a pagar</div></div>
     </div>
 
-    <h2 style="margin-top:20px;">Uso de IA / orçamento</h2>
+    <h2 style="margin-top:20px;">Visão geral dos usuários</h2>
     <div id="adminBudgetAlert" class="budget-alert hidden">
       <strong>Clientes perto do limite:</strong>
       <div id="adminBudgetAlertList" style="margin-top:6px;"></div>
     </div>
-    <table id="adminBudgetTable">
-      <thead><tr><th>Usuário</th><th>Gasto no ciclo</th><th>Créditos extras</th><th>Ações</th></tr></thead>
-      <tbody></tbody>
-    </table>
+    <div class="admin-table-wrap">
+      <table id="adminBudgetTable">
+        <thead>
+          <tr>
+            <th>Usuário</th>
+            <th>Assinatura</th>
+            <th>Pagamento</th>
+            <th>1º pagamento</th>
+            <th>Próxima renovação</th>
+            <th>Gasto no ciclo</th>
+            <th>Créditos extras</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
     <h2 style="margin-top:20px;">Afiliados</h2>
     <table id="adminAffiliatesTable">
@@ -924,7 +942,9 @@ onAuthStateChanged(auth, async (user) => {
 
   renderBottomNav();
   renderHeaderActions();
-  showView("app");
+  // a conta admin (menezesapptec@gmail.com) cai direto no painel administrativo
+  // ao entrar, em vez da tela normal de diário — ela é usada só pra gestão.
+  showView(window._state.role === "admin" ? "admin" : "app");
   renderSubscriptionBanner(userDoc.exists() ? userDoc.data() : {});
 });
 
@@ -1793,6 +1813,26 @@ window.copyAffiliateLink = function () {
 // pra decidir quem entra no alerta de "perto do limite".
 const ORCAMENTO_MENSAL_BRL_ADMIN = 25;
 
+const STATUS_ASSINATURA_LABEL = {
+  active: "Ativa",
+  trial: "Teste",
+  pending_payment: "Pagamento pendente",
+  paused: "Pausada",
+  canceled: "Cancelada",
+};
+
+function formatDateBR(timestamp) {
+  if (!timestamp || !timestamp.toDate) return "—";
+  return timestamp.toDate().toLocaleDateString("pt-BR");
+}
+
+function proximaRenovacaoBR(budgetCycleStart) {
+  if (!budgetCycleStart || !budgetCycleStart.toDate) return "—";
+  const d = budgetCycleStart.toDate();
+  d.setMonth(d.getMonth() + 1);
+  return d.toLocaleDateString("pt-BR") + " (estimado)";
+}
+
 function renderAdminBudgetTable(usersSnap) {
   const tbody = document.querySelector("#adminBudgetTable tbody");
   tbody.innerHTML = "";
@@ -1805,6 +1845,7 @@ function renderAdminBudgetTable(usersSnap) {
     const creditos = u.extraCredits || 0;
     const email = u.email || uid.slice(0, 10) + "...";
     const pct = Math.min(100, Math.round((gasto / ORCAMENTO_MENSAL_BRL_ADMIN) * 100));
+    const statusLabel = STATUS_ASSINATURA_LABEL[u.subscriptionStatus] || u.subscriptionStatus || "Sem assinatura";
 
     if (gasto >= ORCAMENTO_MENSAL_BRL_ADMIN * 0.8 && creditos <= 2) {
       pertoDoLimite.push(`${email} (gasto: R$ ${gasto.toFixed(2)}, créditos: ${creditos})`);
@@ -1813,6 +1854,10 @@ function renderAdminBudgetTable(usersSnap) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${email}</td>
+      <td><span class="badge ${u.subscriptionStatus === "active" ? "active" : ""}">${statusLabel}</span></td>
+      <td>${u.lastPaymentMethod || "—"}</td>
+      <td>${formatDateBR(u.firstPaymentAt)}</td>
+      <td>${proximaRenovacaoBR(u.budgetCycleStart)}</td>
       <td>R$ ${gasto.toFixed(2)} / R$ ${ORCAMENTO_MENSAL_BRL_ADMIN} (${pct}%)</td>
       <td>${creditos}</td>
       <td style="white-space:nowrap;">
