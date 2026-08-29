@@ -126,6 +126,12 @@ module.exports = async (req, res) => {
     }
 
     const saldo = await verificarSaldo(user.uid);
+    if (!saldo.assinaturaOk) {
+      return res.status(402).json({
+        error: "sem_assinatura",
+        mensagem: "Assine o Minha Nutri pra usar a geração de receitas.",
+      });
+    }
     if (!saldo.podeUsar) {
       return res.status(402).json({
         error: "limite_atingido",
