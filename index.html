@@ -612,7 +612,22 @@
     <div class="hero-kcal" style="font-size:32px;">R$ 50<span style="font-size:16px; font-weight:600;">/mês</span></div>
     <p class="muted" style="margin:4px 0 18px;">Cancele quando quiser, direto pelo Mercado Pago.</p>
 
-    <button class="primary" onclick="startCheckout()">Assinar agora</button>
+    <div class="cardapio-tabs" style="max-width:320px; margin:0 auto 14px;">
+      <button type="button" class="cardapio-tab active" id="payTabCard" onclick="selecionarMetodoPagamento('cartao')">💳 Cartão</button>
+      <button type="button" class="cardapio-tab" id="payTabPix" onclick="selecionarMetodoPagamento('pix')">🔑 Pix</button>
+    </div>
+
+    <div id="payPanelCartao" style="text-align:left;">
+      <p class="muted" style="font-size:12px; margin:0 0 10px; text-align:center;">Renovação automática todo mês — cancele quando quiser.</p>
+      <div id="cardPaymentBrick_container"></div>
+      <p class="muted" id="cardBrickLoading" style="font-size:12px; text-align:center;">Carregando formulário seguro do Mercado Pago…</p>
+    </div>
+
+    <div id="payPanelPix" class="hidden">
+      <p class="muted" style="font-size:12px; margin:0 0 14px;">Pagamento único de R$ 50 — libera o acesso por 30 dias. Não renova sozinho: você paga de novo quando quiser continuar usando.</p>
+      <button class="primary" onclick="startPixSubscription()">Pagar com Pix</button>
+    </div>
+
     <p class="error" id="paywallCheckoutError" style="margin-top:10px;"></p>
     <p class="muted" style="margin-top:14px; font-size:12px;">Já assinou? Pode levar alguns minutos pra confirmar — atualize a página.</p>
   </section>
@@ -967,6 +982,13 @@
 
 <nav id="bottomNav" class="bottom-nav hidden"></nav>
 
+<!-- SDK do Mercado Pago (Bricks) — usado só pra desenhar o formulário de
+     cartão da assinatura dentro da própria tela do app, em vez de mandar a
+     pessoa pra uma página separada do Mercado Pago. Não envia dados de
+     cartão pro nosso servidor: o token é gerado direto entre o navegador da
+     pessoa e o Mercado Pago. -->
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import {
@@ -1227,12 +1249,13 @@ onAuthStateChanged(auth, async (user) => {
   // painel) a pessoa só vê a tela de "assine pra continuar" — nada de app.
   const temAcesso =
     window._state.role === "admin" ||
-    window._state.subscriptionStatus === "active" ||
+    (window._state.subscriptionStatus === "active" && !assinaturaExpirada(userData)) ||
     userData.trialGrantedByAdmin === true;
 
   if (!temAcesso) {
     document.getElementById("bottomNav").classList.add("hidden");
     showView("paywall");
+    iniciarCardBrick();
     return;
   }
 
@@ -1277,11 +1300,35 @@ window.saveDailyGoal = async function () {
 
 
 // ---------- Assinatura / paywall ----------
+
+// Assinatura paga de forma manual (Pix avulso, sem renovação automática no
+// Mercado Pago) vale por 30 dias a partir do pagamento — ver comentário em
+// lib/budget.js. Aqui repetimos a mesma checagem no front-end pra decidir se
+// mostra o app ou o paywall, senão a pessoa continuaria vendo o app (mesmo
+// sem acesso de verdade) até recarregar a página depois do prazo vencido.
+function assinaturaExpirada(userData) {
+  if (userData.subscriptionPaymentMethod !== "manual" || !userData.subscriptionExpiresAt) return false;
+  const ms = userData.subscriptionExpiresAt.toMillis
+    ? userData.subscriptionExpiresAt.toMillis()
+    : new Date(userData.subscriptionExpiresAt).getTime();
+  return ms < Date.now();
+}
+
+function formatDataSimples(timestamp) {
+  if (!timestamp) return "";
+  const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return d.toLocaleDateString("pt-BR");
+}
+
 function renderSubscriptionBanner(userData) {
   const banner = document.getElementById("subBanner");
-  const status = userData.subscriptionStatus || "trial";
-  if (status === "active") {
-    banner.innerHTML = `<span class="badge active">Assinatura ativa</span>`;
+  const status = userData.subscriptionStatus || "pending_payment";
+  if (status === "active" && !assinaturaExpirada(userData)) {
+    if (userData.subscriptionPaymentMethod === "manual") {
+      banner.innerHTML = `<span class="badge active">Assinatura ativa (Pix)</span> <span class="muted" style="font-size:12px;">renove até ${formatDataSimples(userData.subscriptionExpiresAt)}</span>`;
+    } else {
+      banner.innerHTML = `<span class="badge active">Assinatura ativa</span>`;
+    }
   } else {
     banner.innerHTML = `
       <p style="margin:0 0 10px;">Você ainda não tem uma assinatura ativa.</p>
@@ -1291,6 +1338,10 @@ function renderSubscriptionBanner(userData) {
   }
 }
 
+// Botão de reserva (usado no banner do app e nos avisos de limite atingido):
+// manda a pessoa pra página de checkout do próprio Mercado Pago. Na tela
+// principal de assinatura (paywall) usamos o formulário de cartão embutido
+// (Card Payment Brick) em vez deste redirecionamento — veja iniciarCardBrick.
 window.startCheckout = async function () {
   const errEl = document.getElementById("checkoutError") || document.getElementById("paywallCheckoutError");
   try {
@@ -1305,6 +1356,103 @@ window.startCheckout = async function () {
     if (errEl) errEl.textContent = "Não foi possível iniciar o pagamento: " + e.message;
   }
 };
+
+window.startPixSubscription = async function () {
+  const errEl = document.getElementById("paywallCheckoutError");
+  if (errEl) errEl.textContent = "";
+  try {
+    const res = await fetch("/api/create-pix-subscription", {
+      method: "POST",
+      headers: await authHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "erro ao iniciar pagamento");
+    window.location.href = data.checkoutUrl;
+  } catch (e) {
+    if (errEl) errEl.textContent = "Não foi possível iniciar o pagamento: " + e.message;
+  }
+};
+
+window.selecionarMetodoPagamento = function (metodo) {
+  const tabCard = document.getElementById("payTabCard");
+  const tabPix = document.getElementById("payTabPix");
+  const panelCard = document.getElementById("payPanelCartao");
+  const panelPix = document.getElementById("payPanelPix");
+  if (metodo === "pix") {
+    tabCard.classList.remove("active");
+    tabPix.classList.add("active");
+    panelCard.classList.add("hidden");
+    panelPix.classList.remove("hidden");
+  } else {
+    tabPix.classList.remove("active");
+    tabCard.classList.add("active");
+    panelPix.classList.add("hidden");
+    panelCard.classList.remove("hidden");
+    iniciarCardBrick();
+  }
+};
+
+// ---------- Cartão embutido na tela de assinatura (Mercado Pago Bricks) ----------
+// A "Public Key" é feita pra ficar no código do navegador — diferente do
+// Access Token, ela não dá acesso a nada sozinha, só permite gerar o token do
+// cartão. O token vira uma assinatura de verdade em /api/create-checkout.
+const MP_PUBLIC_KEY = "APP_USR-43ba913f-5ebd-43b0-bad7-9ab77ac2ee2e";
+let mpCardBrickIniciado = false;
+
+async function iniciarCardBrick() {
+  if (mpCardBrickIniciado) return;
+  const loading = document.getElementById("cardBrickLoading");
+  if (!window.MercadoPago) {
+    if (loading) loading.textContent = "Não foi possível carregar o formulário de pagamento. Recarregue a página.";
+    return;
+  }
+  mpCardBrickIniciado = true;
+  const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: "pt-BR" });
+  try {
+    await mp.bricks().create("cardPayment", "cardPaymentBrick_container", {
+      initialization: { amount: 50 },
+      callbacks: {
+        onReady: () => {
+          if (loading) loading.remove();
+        },
+        onSubmit: (cardFormData) => {
+          return new Promise((resolve, reject) => {
+            confirmarAssinaturaCartao(cardFormData)
+              .then(resolve)
+              .catch((e) => {
+                const errEl = document.getElementById("paywallCheckoutError");
+                if (errEl) errEl.textContent = "Pagamento não aprovado: " + e.message;
+                reject();
+              });
+          });
+        },
+        onError: (error) => {
+          console.error("Erro no formulário de cartão:", error);
+        },
+      },
+    });
+  } catch (e) {
+    console.error("Erro ao iniciar formulário de cartão:", e);
+    if (loading) loading.textContent = "Não foi possível carregar o formulário de pagamento.";
+  }
+}
+
+async function confirmarAssinaturaCartao(cardFormData) {
+  const res = await fetch("/api/create-checkout", {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify({ token: cardFormData.token }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "erro ao processar pagamento");
+  if (!data.subscriptionActive) {
+    throw new Error("pagamento pendente de confirmação — atualize a página em alguns instantes");
+  }
+  const errEl = document.getElementById("paywallCheckoutError");
+  if (errEl) errEl.textContent = "";
+  alert("Assinatura ativada! Bem-vindo(a) ao Minha Nutri.");
+  window.location.reload();
+}
 
 // ---------- Análise de foto ----------
 let selectedPhotoBase64 = null;
@@ -2117,7 +2265,11 @@ const STATUS_ASSINATURA_LABEL = {
 
 function acessoLabelHTML(u) {
   if (u.role === "admin") return `<span class="badge active">Admin</span>`;
-  if (u.subscriptionStatus === "active") return `<span class="badge active">Pago</span>`;
+  if (u.subscriptionStatus === "active" && !assinaturaExpirada(u)) {
+    return u.subscriptionPaymentMethod === "manual"
+      ? `<span class="badge active">Pago (Pix)</span>`
+      : `<span class="badge active">Pago</span>`;
+  }
   if (u.trialGrantedByAdmin === true) return `<span class="badge active">Teste grátis</span>`;
   return `<span class="badge inactive">Sem acesso</span>`;
 }
@@ -2127,9 +2279,15 @@ function formatDateBR(timestamp) {
   return timestamp.toDate().toLocaleDateString("pt-BR");
 }
 
-function proximaRenovacaoBR(budgetCycleStart) {
-  if (!budgetCycleStart || !budgetCycleStart.toDate) return "—";
-  const d = budgetCycleStart.toDate();
+// Pra assinatura manual (Pix avulso), a data de vencimento já é exata
+// (guardada em subscriptionExpiresAt); pra cartão recorrente, é só uma
+// estimativa baseada em quando o ciclo atual começou.
+function proximaRenovacaoBR(u) {
+  if (u.subscriptionPaymentMethod === "manual" && u.subscriptionExpiresAt && u.subscriptionExpiresAt.toDate) {
+    return u.subscriptionExpiresAt.toDate().toLocaleDateString("pt-BR");
+  }
+  if (!u.budgetCycleStart || !u.budgetCycleStart.toDate) return "—";
+  const d = u.budgetCycleStart.toDate();
   d.setMonth(d.getMonth() + 1);
   return d.toLocaleDateString("pt-BR") + " (estimado)";
 }
@@ -2160,7 +2318,7 @@ function renderAdminBudgetTable(usersSnap) {
       <td>${acessoLabelHTML(u)}</td>
       <td>${u.lastPaymentMethod || "—"}</td>
       <td>${formatDateBR(u.firstPaymentAt)}</td>
-      <td>${proximaRenovacaoBR(u.budgetCycleStart)}</td>
+      <td>${proximaRenovacaoBR(u)}</td>
       <td>R$ ${gasto.toFixed(2)} / R$ ${ORCAMENTO_MENSAL_BRL_ADMIN} (${pct}%)</td>
       <td>${creditos}</td>
       <td style="white-space:nowrap;">
