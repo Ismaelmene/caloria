@@ -55,6 +55,34 @@
      mais informação sem espremer tudo numa coluna de celular. */
   main:has(#view-admin:not(.hidden)) { max-width: 1180px; }
   .admin-table-wrap { overflow-x: auto; margin-bottom: 8px; }
+  .admin-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .admin-menu-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60;
+  }
+  .admin-sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 240px;
+    background: var(--panel); border-right: 1px solid var(--border);
+    z-index: 61; padding: 16px 10px; display: flex; flex-direction: column;
+    gap: 4px; overflow-y: auto;
+  }
+  .admin-sidebar-item {
+    text-align: left; background: transparent; border: none; color: var(--text);
+    padding: 12px 10px; border-radius: 8px; font-size: 14px; cursor: pointer;
+    font-family: inherit;
+  }
+  .admin-sidebar-item.active { background: rgba(62,207,142,0.15); color: var(--accent); font-weight: 700; }
+  .dash-grid-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap: 16px; margin-top: 10px; }
+  .dash-chart-card { text-align: center; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 10px; }
+  .dash-chart-title { font-size: 12px; font-weight: 700; margin: 10px 0 2px; }
+  .donut { width: 110px; height: 110px; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+  .donut-hole { width: 78px; height: 78px; border-radius: 50%; background: var(--panel); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; }
+  .bar-chart {
+    display: flex; align-items: flex-end; gap: 8px; height: 130px; padding: 14px 10px 10px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  }
+  .bar-chart .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .bar-chart .bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .bar-chart .bar-label { font-size: 10px; color: var(--muted); margin-top: 4px; }
   .bottom-nav {
     position: fixed;
     left: 0;
@@ -934,106 +962,176 @@
 
   <!-- ---------------- PAINEL ADMIN ---------------- -->
   <section id="view-admin" class="card hidden">
-    <h2>Painel administrativo</h2>
-    <div class="stat-row">
-      <div class="stat"><div class="value" id="adminTotalUsers">0</div><div class="label">usuários totais</div></div>
-      <div class="stat"><div class="value" id="adminTotalActive">0</div><div class="label">assinantes ativos</div></div>
-      <div class="stat"><div class="value" id="adminTotalRevenue">R$ 0</div><div class="label">receita (registrada)</div></div>
-      <div class="stat"><div class="value" id="adminTotalCommissions">R$ 0</div><div class="label">comissões pagas/a pagar</div></div>
+    <div class="admin-header">
+      <button class="header-icon-btn" onclick="toggleAdminMenu()" title="Menu">☰</button>
+      <h2 id="adminSectionTitle" style="margin:0;">Visão geral</h2>
     </div>
 
-    <h2 style="margin-top:20px;">Visão geral dos usuários</h2>
-    <div id="adminBudgetAlert" class="budget-alert hidden">
-      <strong>Clientes perto do limite:</strong>
-      <div id="adminBudgetAlertList" style="margin-top:6px;"></div>
+    <div id="adminMenuOverlay" class="admin-menu-overlay hidden" onclick="fecharAdminMenu()"></div>
+    <nav id="adminSidebar" class="admin-sidebar hidden">
+      <button type="button" class="admin-sidebar-item active" data-sub="dashboard" onclick="showAdminSection('dashboard')">📊 Visão geral</button>
+      <button type="button" class="admin-sidebar-item" data-sub="usuarios" onclick="showAdminSection('usuarios')">👥 Usuários</button>
+      <button type="button" class="admin-sidebar-item" data-sub="cupons" onclick="showAdminSection('cupons')">🎟️ Cupons de desconto</button>
+      <button type="button" class="admin-sidebar-item" data-sub="afiliados" onclick="showAdminSection('afiliados')">🤝 Afiliados</button>
+      <button type="button" class="admin-sidebar-item" data-sub="promover" onclick="showAdminSection('promover')">⭐ Promover usuário</button>
+    </nav>
+
+    <!-- ---------- Visão geral (dashboard) ---------- -->
+    <div id="admin-sub-dashboard" class="admin-sub">
+      <div class="dash-grid-charts">
+        <div class="dash-chart-card">
+          <div class="donut" id="donutMensal"><div class="donut-hole"><span id="donutMensalLabel">0%</span></div></div>
+          <p class="dash-chart-title">Faturamento do mês x meta</p>
+          <p class="muted" id="donutMensalSub" style="font-size:11px;"></p>
+        </div>
+        <div class="dash-chart-card">
+          <div class="donut" id="donutAnual"><div class="donut-hole"><span id="donutAnualLabel">0%</span></div></div>
+          <p class="dash-chart-title">Desempenho anual x meta</p>
+          <p class="muted" id="donutAnualSub" style="font-size:11px;"></p>
+        </div>
+        <div class="dash-chart-card">
+          <div class="donut" id="pieClientes"></div>
+          <p class="dash-chart-title">Composição de clientes</p>
+          <div id="pieClientesLegend" style="font-size:11px; text-align:left; margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <div class="stat-row" style="margin-top:18px; flex-wrap:wrap;">
+        <div class="stat"><div class="value" id="dashClientesAtivos">0</div><div class="label">clientes ativos</div></div>
+        <div class="stat"><div class="value" id="dashClientesInativos">0</div><div class="label">clientes inativos</div></div>
+        <div class="stat"><div class="value" id="dashPagaramNaoRenovaram">0</div><div class="label">pagaram 1x e não renovaram</div></div>
+        <div class="stat"><div class="value" id="dashFaturamentoMes">R$ 0</div><div class="label">faturamento do mês</div></div>
+        <div class="stat"><div class="value" id="dashPrevisaoProxMes">R$ 0</div><div class="label">previsão próximo mês</div></div>
+        <div class="stat"><div class="value" id="dashCrescimentoMensal">0%</div><div class="label">crescimento mensal</div></div>
+        <div class="stat"><div class="value" id="dashFaturamentoAnual">R$ 0</div><div class="label">faturamento do ano</div></div>
+        <div class="stat"><div class="value" id="dashProjecaoAno1">R$ 0</div><div class="label">projeção pro ano que vem</div></div>
+        <div class="stat"><div class="value" id="dashFaturamentoTotal">R$ 0</div><div class="label">faturamento histórico total</div></div>
+      </div>
+
+      <h2 style="margin-top:20px;">Faturamento por mês</h2>
+      <div class="bar-chart" id="barChartFaturamento"></div>
+
+      <h2 style="margin-top:20px;">Metas</h2>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+          <label>Meta mensal (R$)</label>
+          <input id="metaMensalInput" type="number" placeholder="Ex: 5000" />
+        </div>
+        <div>
+          <label>Meta anual (R$)</label>
+          <input id="metaAnualInput" type="number" placeholder="Ex: 60000" />
+        </div>
+        <button class="primary" onclick="salvarMetas()">Salvar metas</button>
+      </div>
+      <p class="muted" id="metasStatus"></p>
+      <p class="muted" style="font-size:11px; margin-top:10px;">
+        Previsão e projeção são estimativas simples baseadas no crescimento recente do faturamento — quanto mais meses de dados acumularem, mais precisas ficam.
+      </p>
     </div>
-    <div class="admin-table-wrap">
-      <table id="adminBudgetTable">
-        <thead>
-          <tr>
-            <th>Usuário</th>
-            <th>Assinatura</th>
-            <th>Acesso</th>
-            <th>Pagamento</th>
-            <th>1º pagamento</th>
-            <th>Próxima renovação</th>
-            <th>Gasto no ciclo</th>
-            <th>Créditos extras</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
+
+    <!-- ---------- Usuários ---------- -->
+    <div id="admin-sub-usuarios" class="admin-sub hidden">
+      <div id="adminBudgetAlert" class="budget-alert hidden">
+        <strong>Clientes perto do limite:</strong>
+        <div id="adminBudgetAlertList" style="margin-top:6px;"></div>
+      </div>
+      <div class="admin-table-wrap">
+        <table id="adminBudgetTable">
+          <thead>
+            <tr>
+              <th>Usuário</th>
+              <th>Assinatura</th>
+              <th>Acesso</th>
+              <th>Pagamento</th>
+              <th>1º pagamento</th>
+              <th>Próxima renovação</th>
+              <th>Gasto no ciclo</th>
+              <th>Créditos extras</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ---------- Cupons de desconto ---------- -->
+    <div id="admin-sub-cupons" class="admin-sub hidden">
+      <p class="muted">Preço cheio da assinatura: R$ 70/mês. O desconto do cupom vale sobre esse valor — no cartão, o valor com desconto fica valendo enquanto a assinatura durar; no Pix, vale pra aquele pagamento avulso.</p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:10px; margin-bottom:10px;">
+        <div>
+          <label>Código</label>
+          <input id="cupomCodigoAdmin" placeholder="Ex: BEMVINDO20" style="text-transform:uppercase;" />
+        </div>
+        <div>
+          <label>Tipo</label>
+          <select id="cupomTipoAdmin">
+            <option value="percentual">% percentual</option>
+            <option value="fixo">R$ fixo</option>
+          </select>
+        </div>
+        <div>
+          <label>Valor</label>
+          <input id="cupomValorAdmin" type="number" placeholder="Ex: 20" />
+        </div>
+        <div>
+          <label>Válido até (opcional)</label>
+          <input id="cupomValidadeAdmin" type="date" />
+        </div>
+        <div>
+          <label>Limite de usos (opcional)</label>
+          <input id="cupomLimiteAdmin" type="number" placeholder="Sem limite" />
+        </div>
+      </div>
+      <button class="primary" onclick="criarCupom()">Criar cupom</button>
+      <p class="muted" id="cupomStatusAdmin"></p>
+
+      <div class="admin-table-wrap" style="margin-top:14px;">
+        <table id="adminCouponsTable">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Desconto</th>
+              <th>Válido até</th>
+              <th>Usos</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ---------- Afiliados ---------- -->
+    <div id="admin-sub-afiliados" class="admin-sub hidden">
+      <div class="stat-row">
+        <div class="stat"><div class="value" id="adminTotalCommissions">R$ 0</div><div class="label">comissões pagas/a pagar</div></div>
+      </div>
+      <table id="adminAffiliatesTable" style="margin-top:14px;">
+        <thead><tr><th>Nome</th><th>Código</th><th>Comissão</th><th>Indicados ativos</th><th>Total ganho</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
 
-    <h2 style="margin-top:20px;">Afiliados</h2>
-    <table id="adminAffiliatesTable">
-      <thead><tr><th>Nome</th><th>Código</th><th>Comissão</th><th>Indicados ativos</th><th>Total ganho</th></tr></thead>
-      <tbody></tbody>
-    </table>
-
-    <h2 style="margin-top:20px;">Cupons de desconto</h2>
-    <p class="muted">Preço cheio da assinatura: R$ 70/mês. O desconto do cupom vale sobre esse valor — no cartão, o valor com desconto fica valendo enquanto a assinatura durar; no Pix, vale pra aquele pagamento avulso.</p>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:10px; margin-bottom:10px;">
-      <div>
-        <label>Código</label>
-        <input id="cupomCodigoAdmin" placeholder="Ex: BEMVINDO20" style="text-transform:uppercase;" />
-      </div>
-      <div>
-        <label>Tipo</label>
-        <select id="cupomTipoAdmin">
-          <option value="percentual">% percentual</option>
-          <option value="fixo">R$ fixo</option>
-        </select>
-      </div>
-      <div>
-        <label>Valor</label>
-        <input id="cupomValorAdmin" type="number" placeholder="Ex: 20" />
-      </div>
-      <div>
-        <label>Válido até (opcional)</label>
-        <input id="cupomValidadeAdmin" type="date" />
-      </div>
-      <div>
-        <label>Limite de usos (opcional)</label>
-        <input id="cupomLimiteAdmin" type="number" placeholder="Sem limite" />
-      </div>
+    <!-- ---------- Promover usuário ---------- -->
+    <div id="admin-sub-promover" class="admin-sub hidden">
+      <p class="muted">Cole o UID do usuário (você encontra no Firebase Console &gt; Authentication) para torná-lo afiliado ou admin.</p>
+      <label>UID do usuário</label>
+      <input id="promoteUid" placeholder="uid do Firebase Auth" />
+      <label>Nome (se for virar afiliado)</label>
+      <input id="promoteName" placeholder="Nome do afiliado" />
+      <label>Comissão (ex: 0.30 = 30%)</label>
+      <input id="promoteRate" placeholder="0.30" />
+      <label>Novo papel</label>
+      <select id="promoteRole">
+        <option value="affiliate">Afiliado</option>
+        <option value="admin">Admin</option>
+        <option value="user">Usuário comum</option>
+      </select>
+      <button class="primary" onclick="promoteUser()">Aplicar</button>
+      <p class="muted" id="promoteStatus"></p>
     </div>
-    <button class="primary" onclick="criarCupom()">Criar cupom</button>
-    <p class="muted" id="cupomStatusAdmin"></p>
-
-    <div class="admin-table-wrap" style="margin-top:14px;">
-      <table id="adminCouponsTable">
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Desconto</th>
-            <th>Válido até</th>
-            <th>Usos</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <h2 style="margin-top:20px;">Promover usuário</h2>
-    <p class="muted">Cole o UID do usuário (você encontra no Firebase Console &gt; Authentication) para torná-lo afiliado ou admin.</p>
-    <label>UID do usuário</label>
-    <input id="promoteUid" placeholder="uid do Firebase Auth" />
-    <label>Nome (se for virar afiliado)</label>
-    <input id="promoteName" placeholder="Nome do afiliado" />
-    <label>Comissão (ex: 0.30 = 30%)</label>
-    <input id="promoteRate" placeholder="0.30" />
-    <label>Novo papel</label>
-    <select id="promoteRole">
-      <option value="affiliate">Afiliado</option>
-      <option value="admin">Admin</option>
-      <option value="user">Usuário comum</option>
-    </select>
-    <button class="primary" onclick="promoteUser()">Aplicar</button>
-    <p class="muted" id="promoteStatus"></p>
   </section>
 
 </main>
@@ -2570,23 +2668,211 @@ function renderAdminCouponsTable(couponsSnap) {
   });
 }
 
+// ---------- Menu lateral do admin ----------
+window.toggleAdminMenu = function () {
+  document.getElementById("adminMenuOverlay").classList.toggle("hidden");
+  document.getElementById("adminSidebar").classList.toggle("hidden");
+};
+window.fecharAdminMenu = function () {
+  document.getElementById("adminMenuOverlay").classList.add("hidden");
+  document.getElementById("adminSidebar").classList.add("hidden");
+};
+window.showAdminSection = function (name) {
+  document.querySelectorAll(".admin-sub").forEach((el) => el.classList.add("hidden"));
+  const alvo = document.getElementById(`admin-sub-${name}`);
+  if (alvo) alvo.classList.remove("hidden");
+  document.querySelectorAll(".admin-sidebar-item").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.sub === name);
+  });
+  const titulos = {
+    dashboard: "Visão geral",
+    usuarios: "Usuários",
+    cupons: "Cupons de desconto",
+    afiliados: "Afiliados",
+    promover: "Promover usuário",
+  };
+  document.getElementById("adminSectionTitle").textContent = titulos[name] || "Painel administrativo";
+  fecharAdminMenu();
+};
+
+// ---------- Visão geral / dashboard do admin ----------
+function currentPeriodKey(date) {
+  const d = date || new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function periodLabel(key) {
+  const [y, m] = key.split("-");
+  const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  return `${meses[Number(m) - 1]}/${y.slice(2)}`;
+}
+
+// Monta um "conic-gradient" pra desenhar pizza/rosca só com CSS, sem
+// biblioteca de gráfico nenhuma. "segments" é uma lista de {pct, color}.
+function pieGradient(segments) {
+  let acc = 0;
+  const stops = [];
+  segments.forEach((s) => {
+    if (s.pct <= 0) return;
+    const inicio = acc;
+    acc += s.pct;
+    stops.push(`${s.color} ${inicio}% ${acc}%`);
+  });
+  if (!stops.length) return "var(--border)";
+  return `conic-gradient(${stops.join(", ")})`;
+}
+
+window.salvarMetas = async function () {
+  const statusEl = document.getElementById("metasStatus");
+  const metaMensal = Number(document.getElementById("metaMensalInput").value) || 0;
+  const metaAnual = Number(document.getElementById("metaAnualInput").value) || 0;
+  statusEl.textContent = "Salvando...";
+  try {
+    await setDoc(doc(db, "settings", "metas"), { metaMensalBRL: metaMensal, metaAnualBRL: metaAnual }, { merge: true });
+    statusEl.textContent = "Metas salvas!";
+    loadAdminPanel();
+  } catch (e) {
+    statusEl.textContent = "Erro ao salvar metas: " + e.message;
+  }
+};
+
+async function loadAdminDashboard(usersSnap, paymentsSnap) {
+  const agora = new Date();
+  const periodoAtual = currentPeriodKey(agora);
+  const periodoAnterior = currentPeriodKey(new Date(agora.getFullYear(), agora.getMonth() - 1, 1));
+  const anoAtual = String(agora.getFullYear());
+
+  // clientes ativos / inativos / "pagaram uma vez e não renovaram" — conta
+  // de novo a mesma regra de acesso usada no resto do app (assinaturaExpirada)
+  let clientesAtivos = 0;
+  let clientesInativos = 0;
+  let pagaramNaoRenovaram = 0;
+  usersSnap.forEach((d) => {
+    const u = d.data();
+    if (u.role === "admin") return;
+    const ativo = u.subscriptionStatus === "active" && !assinaturaExpirada(u);
+    if (ativo) {
+      clientesAtivos++;
+    } else {
+      clientesInativos++;
+      if (u.firstPaymentAt) pagaramNaoRenovaram++;
+    }
+  });
+
+  // faturamento por mês (a partir da coleção "payments", que já registra
+  // todo pagamento aprovado — assinatura por cartão, Pix e créditos avulsos)
+  const faturamentoPorMes = {};
+  let faturamentoTotal = 0;
+  let faturamentoAnual = 0;
+  paymentsSnap.forEach((d) => {
+    const p = d.data();
+    const periodo = p.period || "?";
+    const valor = p.amount || 0;
+    faturamentoPorMes[periodo] = (faturamentoPorMes[periodo] || 0) + valor;
+    faturamentoTotal += valor;
+    if (periodo.startsWith(anoAtual + "-")) faturamentoAnual += valor;
+  });
+
+  const faturamentoMes = faturamentoPorMes[periodoAtual] || 0;
+  const faturamentoMesAnterior = faturamentoPorMes[periodoAnterior] || 0;
+  const crescimentoMensal = faturamentoMesAnterior > 0
+    ? ((faturamentoMes - faturamentoMesAnterior) / faturamentoMesAnterior) * 100
+    : (faturamentoMes > 0 ? 100 : 0);
+
+  // estimativas simples — nada de mágica: aplicam a taxa de crescimento
+  // recente sobre o valor atual. Quanto mais meses de histórico existirem,
+  // mais essa conta tende a refletir a realidade.
+  const previsaoProxMes = Math.max(0, faturamentoMes * (1 + crescimentoMensal / 100));
+  const taxaMensalLimitada = Math.max(-0.5, Math.min(1, crescimentoMensal / 100));
+  const projecaoAno1 = faturamentoAnual > 0 ? faturamentoAnual * Math.pow(1 + taxaMensalLimitada, 12) : 0;
+
+  // metas definidas pelo admin (Firestore: settings/metas)
+  let metaMensal = 0;
+  let metaAnual = 0;
+  try {
+    const metasSnap = await getDoc(doc(db, "settings", "metas"));
+    if (metasSnap.exists()) {
+      metaMensal = metasSnap.data().metaMensalBRL || 0;
+      metaAnual = metasSnap.data().metaAnualBRL || 0;
+    }
+  } catch (e) {
+    console.warn("Não consegui carregar as metas:", e.message);
+  }
+  document.getElementById("metaMensalInput").value = metaMensal || "";
+  document.getElementById("metaAnualInput").value = metaAnual || "";
+
+  const pctMensal = metaMensal > 0 ? Math.min(100, Math.round((faturamentoMes / metaMensal) * 100)) : 0;
+  const pctAnual = metaAnual > 0 ? Math.min(100, Math.round((faturamentoAnual / metaAnual) * 100)) : 0;
+
+  document.getElementById("donutMensal").style.background = pieGradient([
+    { pct: pctMensal, color: "var(--accent)" },
+    { pct: 100 - pctMensal, color: "var(--border)" },
+  ]);
+  document.getElementById("donutMensalLabel").textContent = pctMensal + "%";
+  document.getElementById("donutMensalSub").textContent = metaMensal > 0
+    ? `R$ ${faturamentoMes.toFixed(2)} de R$ ${metaMensal.toFixed(2)}`
+    : "defina uma meta mensal abaixo";
+
+  document.getElementById("donutAnual").style.background = pieGradient([
+    { pct: pctAnual, color: "var(--accent)" },
+    { pct: 100 - pctAnual, color: "var(--border)" },
+  ]);
+  document.getElementById("donutAnualLabel").textContent = pctAnual + "%";
+  document.getElementById("donutAnualSub").textContent = metaAnual > 0
+    ? `R$ ${faturamentoAnual.toFixed(2)} de R$ ${metaAnual.toFixed(2)}`
+    : "defina uma meta anual abaixo";
+
+  const totalClientesBase = clientesAtivos + clientesInativos;
+  const pctAtivos = totalClientesBase > 0 ? (clientesAtivos / totalClientesBase) * 100 : 0;
+  const pctChurn = totalClientesBase > 0 ? (pagaramNaoRenovaram / totalClientesBase) * 100 : 0;
+  const pctOutros = Math.max(0, 100 - pctAtivos - pctChurn);
+  document.getElementById("pieClientes").style.background = pieGradient([
+    { pct: pctAtivos, color: "var(--accent)" },
+    { pct: pctChurn, color: "var(--danger)" },
+    { pct: pctOutros, color: "var(--border)" },
+  ]);
+  document.getElementById("pieClientesLegend").innerHTML = `
+    <div style="margin-bottom:4px;"><span style="display:inline-block; width:10px; height:10px; background:var(--accent); border-radius:2px; margin-right:6px;"></span>Ativos: ${clientesAtivos}</div>
+    <div style="margin-bottom:4px;"><span style="display:inline-block; width:10px; height:10px; background:var(--danger); border-radius:2px; margin-right:6px;"></span>Pagaram e não renovaram: ${pagaramNaoRenovaram}</div>
+    <div><span style="display:inline-block; width:10px; height:10px; background:var(--border); border-radius:2px; margin-right:6px;"></span>Nunca ativos: ${Math.max(0, clientesInativos - pagaramNaoRenovaram)}</div>
+  `;
+
+  document.getElementById("dashClientesAtivos").textContent = clientesAtivos;
+  document.getElementById("dashClientesInativos").textContent = clientesInativos;
+  document.getElementById("dashPagaramNaoRenovaram").textContent = pagaramNaoRenovaram;
+  document.getElementById("dashFaturamentoMes").textContent = "R$ " + faturamentoMes.toFixed(2);
+  document.getElementById("dashPrevisaoProxMes").textContent = "R$ " + previsaoProxMes.toFixed(2);
+  document.getElementById("dashCrescimentoMensal").textContent = (crescimentoMensal >= 0 ? "+" : "") + crescimentoMensal.toFixed(1) + "%";
+  document.getElementById("dashFaturamentoAnual").textContent = "R$ " + faturamentoAnual.toFixed(2);
+  document.getElementById("dashProjecaoAno1").textContent = "R$ " + projecaoAno1.toFixed(2);
+  document.getElementById("dashFaturamentoTotal").textContent = "R$ " + faturamentoTotal.toFixed(2);
+
+  // gráfico de barras — faturamento dos últimos 6 meses
+  const meses = [];
+  for (let i = 5; i >= 0; i--) {
+    meses.push(currentPeriodKey(new Date(agora.getFullYear(), agora.getMonth() - i, 1)));
+  }
+  const valores = meses.map((m) => faturamentoPorMes[m] || 0);
+  const maxValor = Math.max(1, ...valores);
+  document.getElementById("barChartFaturamento").innerHTML = meses
+    .map((m, i) => `
+      <div class="bar-col">
+        <div class="bar" style="height:${Math.max(2, Math.round((valores[i] / maxValor) * 100))}%;" title="R$ ${valores[i].toFixed(2)}"></div>
+        <div class="bar-label">${periodLabel(m)}</div>
+      </div>
+    `)
+    .join("");
+}
+
 async function loadAdminPanel() {
   const usersSnap = await getDocs(collection(db, "users"));
-  let activeCount = 0;
-  usersSnap.forEach((d) => {
-    if (d.data().subscriptionStatus === "active") activeCount++;
-  });
-  document.getElementById("adminTotalUsers").textContent = usersSnap.size;
-  document.getElementById("adminTotalActive").textContent = activeCount;
   renderAdminBudgetTable(usersSnap);
 
   const couponsSnap = await getDocs(collection(db, "coupons"));
   renderAdminCouponsTable(couponsSnap);
 
   const paymentsSnap = await getDocs(collection(db, "payments"));
-  let revenue = 0;
-  paymentsSnap.forEach((d) => (revenue += d.data().amount || 0));
-  document.getElementById("adminTotalRevenue").textContent = "R$ " + revenue.toFixed(2);
+  await loadAdminDashboard(usersSnap, paymentsSnap);
 
   const affSnap = await getDocs(collection(db, "affiliates"));
   let totalCommissions = 0;
