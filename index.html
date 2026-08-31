@@ -525,7 +525,7 @@
             <tr><td>Disponibilidade</td><td>Só no horário marcado</td><td>24 horas, todos os dias</td></tr>
             <tr><td>Calorias do prato</td><td>Você calcula na mão</td><td>Foto e pronto</td></tr>
             <tr><td>Tirar uma dúvida rápida</td><td>Espera a próxima consulta</td><td>Na hora, pelo chat</td></tr>
-            <tr><td>Custo mensal</td><td>Geralmente bem mais caro</td><td>R$ 50/mês</td></tr>
+            <tr><td>Custo mensal</td><td>Geralmente bem mais caro</td><td>R$ 70/mês</td></tr>
           </tbody>
         </table>
       </div>
@@ -551,7 +551,7 @@
 
     <div class="landing-section">
       <div class="landing-price-box">
-        <div class="price">R$ 50<small>/mês</small></div>
+        <div class="price">R$ 70<small>/mês</small></div>
         <p class="muted" style="margin:8px 0 16px;">Todos os recursos inclusos. Sem letras miúdas: cancele quando quiser, direto pelo Mercado Pago, sem multa.</p>
         <button class="primary" onclick="irParaCadastro()">Assinar agora</button>
       </div>
@@ -609,8 +609,19 @@
       <p style="margin:0;">📈 <strong>Evolução Corporal</strong> — acompanhe seu peso e seu progresso</p>
     </div>
 
-    <div class="hero-kcal" style="font-size:32px;">R$ 50<span style="font-size:16px; font-weight:600;">/mês</span></div>
+    <div class="hero-kcal" style="font-size:32px;">
+      <span id="paywallPriceOriginal">R$ 70</span><span id="paywallPriceFinal" class="hidden"></span><span style="font-size:16px; font-weight:600;">/mês</span>
+    </div>
     <p class="muted" style="margin:4px 0 18px;">Cancele quando quiser, direto pelo Mercado Pago.</p>
+
+    <div style="text-align:left; max-width:320px; margin:0 auto 16px;">
+      <label style="font-size:12px;">Cupom de desconto (opcional)</label>
+      <div style="display:flex; gap:8px;">
+        <input id="cupomInput" placeholder="Ex: BEMVINDO20" style="flex:1; text-transform:uppercase;" />
+        <button type="button" class="secondary" onclick="aplicarCupom()">Aplicar</button>
+      </div>
+      <p class="muted" id="cupomFeedback" style="font-size:12px; margin-top:6px;"></p>
+    </div>
 
     <div class="cardapio-tabs" style="max-width:320px; margin:0 auto 14px;">
       <button type="button" class="cardapio-tab active" id="payTabCard" onclick="selecionarMetodoPagamento('cartao')">💳 Cartão</button>
@@ -618,13 +629,14 @@
     </div>
 
     <div id="payPanelCartao" style="text-align:left;">
-      <p class="muted" style="font-size:12px; margin:0 0 10px; text-align:center;">Renovação automática todo mês — cancele quando quiser.</p>
+      <p class="muted" style="font-size:12px; margin:0 0 4px; text-align:center;">Renovação automática todo mês — cancele quando quiser.</p>
+      <p class="muted" style="font-size:11px; margin:0 0 10px; text-align:center;">Se você aplicou um cupom, o valor exibido abaixo no formulário pode não atualizar — mas o valor cobrado de verdade já sai com o desconto.</p>
       <div id="cardPaymentBrick_container"></div>
       <p class="muted" id="cardBrickLoading" style="font-size:12px; text-align:center;">Carregando formulário seguro do Mercado Pago…</p>
     </div>
 
     <div id="payPanelPix" class="hidden">
-      <p class="muted" style="font-size:12px; margin:0 0 14px;">Pagamento único de R$ 50 — libera o acesso por 30 dias. Não renova sozinho: você paga de novo quando quiser continuar usando.</p>
+      <p class="muted" style="font-size:12px; margin:0 0 14px;">Pagamento único — libera o acesso por 30 dias. Não renova sozinho: você paga de novo quando quiser continuar usando.</p>
       <button class="primary" onclick="startPixSubscription()">Pagar com Pix</button>
     </div>
 
@@ -960,6 +972,52 @@
       <tbody></tbody>
     </table>
 
+    <h2 style="margin-top:20px;">Cupons de desconto</h2>
+    <p class="muted">Preço cheio da assinatura: R$ 70/mês. O desconto do cupom vale sobre esse valor — no cartão, o valor com desconto fica valendo enquanto a assinatura durar; no Pix, vale pra aquele pagamento avulso.</p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:10px; margin-bottom:10px;">
+      <div>
+        <label>Código</label>
+        <input id="cupomCodigoAdmin" placeholder="Ex: BEMVINDO20" style="text-transform:uppercase;" />
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select id="cupomTipoAdmin">
+          <option value="percentual">% percentual</option>
+          <option value="fixo">R$ fixo</option>
+        </select>
+      </div>
+      <div>
+        <label>Valor</label>
+        <input id="cupomValorAdmin" type="number" placeholder="Ex: 20" />
+      </div>
+      <div>
+        <label>Válido até (opcional)</label>
+        <input id="cupomValidadeAdmin" type="date" />
+      </div>
+      <div>
+        <label>Limite de usos (opcional)</label>
+        <input id="cupomLimiteAdmin" type="number" placeholder="Sem limite" />
+      </div>
+    </div>
+    <button class="primary" onclick="criarCupom()">Criar cupom</button>
+    <p class="muted" id="cupomStatusAdmin"></p>
+
+    <div class="admin-table-wrap" style="margin-top:14px;">
+      <table id="adminCouponsTable">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Desconto</th>
+            <th>Válido até</th>
+            <th>Usos</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
     <h2 style="margin-top:20px;">Promover usuário</h2>
     <p class="muted">Cole o UID do usuário (você encontra no Firebase Console &gt; Authentication) para torná-lo afiliado ou admin.</p>
     <label>UID do usuário</label>
@@ -1191,7 +1249,7 @@ function limiteAtingidoInnerHTML(data) {
     return `
       <strong>Assinatura necessária</strong>
       <p class="muted" style="margin:6px 0 10px;">${msg}</p>
-      <button class="primary" onclick="startCheckout()">Assinar agora — R$ 50/mês</button>
+      <button class="primary" onclick="startCheckout()">Assinar agora — R$ 70/mês</button>
     `;
   }
   const msg = (data && data.mensagem) || "Você atingiu seu limite mensal de IA. Compre créditos extras pra continuar usando.";
@@ -1332,7 +1390,7 @@ function renderSubscriptionBanner(userData) {
   } else {
     banner.innerHTML = `
       <p style="margin:0 0 10px;">Você ainda não tem uma assinatura ativa.</p>
-      <button class="primary" onclick="startCheckout()">Assinar agora — R$ 50/mês</button>
+      <button class="primary" onclick="startCheckout()">Assinar agora — R$ 70/mês</button>
       <p class="error" id="checkoutError" style="margin-top:8px;"></p>
     `;
   }
@@ -1364,12 +1422,54 @@ window.startPixSubscription = async function () {
     const res = await fetch("/api/create-pix-subscription", {
       method: "POST",
       headers: await authHeaders(),
+      body: JSON.stringify({ cupom: window._cupomAplicado || null }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "erro ao iniciar pagamento");
     window.location.href = data.checkoutUrl;
   } catch (e) {
     if (errEl) errEl.textContent = "Não foi possível iniciar o pagamento: " + e.message;
+  }
+};
+
+// ---------- Cupom de desconto ----------
+window._cupomAplicado = null;
+
+window.aplicarCupom = async function () {
+  const input = document.getElementById("cupomInput");
+  const feedback = document.getElementById("cupomFeedback");
+  const codigo = (input.value || "").trim().toUpperCase();
+  if (!codigo) {
+    feedback.textContent = "Digite um código de cupom.";
+    return;
+  }
+  feedback.textContent = "Validando...";
+  try {
+    const res = await fetch("/api/validate-coupon", {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify({ codigo }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.valido) {
+      window._cupomAplicado = null;
+      document.getElementById("paywallPriceFinal").classList.add("hidden");
+      document.getElementById("paywallPriceOriginal").style.textDecoration = "none";
+      document.getElementById("paywallPriceOriginal").style.opacity = "1";
+      feedback.textContent = data.error || "Cupom inválido.";
+      return;
+    }
+    window._cupomAplicado = data.codigo;
+    const original = document.getElementById("paywallPriceOriginal");
+    const final = document.getElementById("paywallPriceFinal");
+    original.style.textDecoration = "line-through";
+    original.style.opacity = "0.6";
+    original.style.fontSize = "18px";
+    final.textContent = " R$ " + data.precoFinal.toFixed(2).replace(".", ",");
+    final.classList.remove("hidden");
+    feedback.textContent = `Cupom ${data.codigo} aplicado! O valor com desconto é calculado de novo no servidor na hora de pagar.`;
+  } catch (e) {
+    feedback.textContent = "Erro ao validar cupom: " + e.message;
   }
 };
 
@@ -1410,7 +1510,7 @@ async function iniciarCardBrick() {
   const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: "pt-BR" });
   try {
     await mp.bricks().create("cardPayment", "cardPaymentBrick_container", {
-      initialization: { amount: 50 },
+      initialization: { amount: 70 },
       callbacks: {
         onReady: () => {
           if (loading) loading.remove();
@@ -1441,7 +1541,7 @@ async function confirmarAssinaturaCartao(cardFormData) {
   const res = await fetch("/api/create-checkout", {
     method: "POST",
     headers: await authHeaders(),
-    body: JSON.stringify({ token: cardFormData.token }),
+    body: JSON.stringify({ token: cardFormData.token, cupom: window._cupomAplicado || null }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "erro ao processar pagamento");
@@ -2363,6 +2463,110 @@ window.alternarTesteGratis = async function (uid, ativar) {
   }
 };
 
+// ---------- Cupons de desconto (painel admin) ----------
+window.criarCupom = async function () {
+  const statusEl = document.getElementById("cupomStatusAdmin");
+  const codigo = document.getElementById("cupomCodigoAdmin").value.trim().toUpperCase();
+  const tipo = document.getElementById("cupomTipoAdmin").value;
+  const valor = Number(document.getElementById("cupomValorAdmin").value);
+  const validadeStr = document.getElementById("cupomValidadeAdmin").value;
+  const limiteStr = document.getElementById("cupomLimiteAdmin").value;
+
+  if (!codigo) {
+    statusEl.textContent = "Digite um código pro cupom.";
+    return;
+  }
+  if (!valor || valor <= 0) {
+    statusEl.textContent = "Digite um valor de desconto válido.";
+    return;
+  }
+  if (tipo === "percentual" && valor > 100) {
+    statusEl.textContent = "Desconto percentual não pode passar de 100%.";
+    return;
+  }
+
+  statusEl.textContent = "Criando...";
+  try {
+    await setDoc(doc(db, "coupons", codigo), {
+      tipo,
+      valor,
+      ativo: true,
+      usosAtuais: 0,
+      ...(validadeStr ? { validoAte: Timestamp.fromDate(new Date(validadeStr + "T23:59:59")) } : {}),
+      ...(limiteStr ? { usosMax: Number(limiteStr) } : {}),
+      createdAt: serverTimestamp(),
+    });
+    document.getElementById("cupomCodigoAdmin").value = "";
+    document.getElementById("cupomValorAdmin").value = "";
+    document.getElementById("cupomValidadeAdmin").value = "";
+    document.getElementById("cupomLimiteAdmin").value = "";
+    statusEl.textContent = `Cupom ${codigo} criado!`;
+    loadAdminPanel();
+  } catch (e) {
+    statusEl.textContent = "Erro ao criar cupom: " + e.message;
+  }
+};
+
+window.alternarCupomAtivo = async function (codigo, ativar) {
+  try {
+    await updateDoc(doc(db, "coupons", codigo), { ativo: ativar });
+    loadAdminPanel();
+  } catch (e) {
+    alert("Erro ao alterar cupom: " + e.message);
+  }
+};
+
+window.excluirCupom = async function (codigo) {
+  try {
+    await deleteDoc(doc(db, "coupons", codigo));
+    loadAdminPanel();
+  } catch (e) {
+    alert("Erro ao excluir cupom: " + e.message);
+  }
+};
+
+function renderAdminCouponsTable(couponsSnap) {
+  const tbody = document.querySelector("#adminCouponsTable tbody");
+  tbody.innerHTML = "";
+  couponsSnap.forEach((d) => {
+    const c = d.data();
+    const codigo = d.id;
+    const descontoLabel = c.tipo === "fixo" ? `R$ ${Number(c.valor).toFixed(2)}` : `${c.valor}%`;
+    const validoAteDate = c.validoAte && c.validoAte.toDate ? c.validoAte.toDate() : null;
+    const validadeLabel = validoAteDate ? validoAteDate.toLocaleDateString("pt-BR") : "sem validade";
+    const usosLabel = `${c.usosAtuais || 0}${c.usosMax ? " / " + c.usosMax : ""}`;
+    const expirado = validoAteDate && validoAteDate.getTime() < Date.now();
+    const esgotado = c.usosMax && (c.usosAtuais || 0) >= c.usosMax;
+
+    let statusLabel = "Ativo";
+    let statusClasse = "active";
+    if (c.ativo === false) {
+      statusLabel = "Desativado";
+      statusClasse = "";
+    } else if (expirado) {
+      statusLabel = "Expirado";
+      statusClasse = "inactive";
+    } else if (esgotado) {
+      statusLabel = "Esgotado";
+      statusClasse = "inactive";
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${codigo}</td>
+      <td>${descontoLabel}</td>
+      <td>${validadeLabel}</td>
+      <td>${usosLabel}</td>
+      <td><span class="badge ${statusClasse}">${statusLabel}</span></td>
+      <td>
+        <button class="secondary" style="padding:4px 8px;" onclick="alternarCupomAtivo('${codigo}', ${c.ativo === false})">${c.ativo === false ? "Ativar" : "Desativar"}</button>
+        <button class="secondary" style="padding:4px 8px;" onclick="excluirCupom('${codigo}')">Excluir</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 async function loadAdminPanel() {
   const usersSnap = await getDocs(collection(db, "users"));
   let activeCount = 0;
@@ -2372,6 +2576,9 @@ async function loadAdminPanel() {
   document.getElementById("adminTotalUsers").textContent = usersSnap.size;
   document.getElementById("adminTotalActive").textContent = activeCount;
   renderAdminBudgetTable(usersSnap);
+
+  const couponsSnap = await getDocs(collection(db, "coupons"));
+  renderAdminCouponsTable(couponsSnap);
 
   const paymentsSnap = await getDocs(collection(db, "payments"));
   let revenue = 0;
