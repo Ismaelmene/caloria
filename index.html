@@ -1099,7 +1099,10 @@ const VIEW_TO_BOTTOM_KEY = {
 function renderBottomNav() {
   const nav = document.getElementById("bottomNav");
   nav.innerHTML = "";
-  if (!window._state.user) {
+  // Admin não usa o app do cliente (diário, receitas, chat, etc.) — só o
+  // painel administrativo. Sem essa navegação embaixo, não tem como a conta
+  // admin "vagar" pra dentro das telas do cliente por engano.
+  if (!window._state.user || window._state.role === "admin") {
     nav.classList.add("hidden");
     return;
   }
