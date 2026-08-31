@@ -1,4 +1,5 @@
 const { db, admin } = require("../lib/firebaseAdmin");
+const { registrarUsoCupom } = require("../lib/coupons");
 
 // Cadastre esta URL no painel do Mercado Pago como:
 //   https://SEU-PROJETO.vercel.app/api/mp-webhook?token=SEU_MP_WEBHOOK_SECRET
@@ -33,13 +34,24 @@ function rotuloMetodoPagamento(payment) {
 }
 
 async function handleApprovedPayment(payment) {
+  const paymentRef = db.collection("payments").doc(String(payment.id));
+
+  // O Mercado Pago às vezes reenvia a mesma notificação mais de uma vez — se
+  // já processamos esse pagamento antes (já existe um registro dele aqui),
+  // não processa de novo, pra não duplicar crédito de cupom, comissão de
+  // afiliado, créditos extras, etc.
+  const paymentSnapAntes = await paymentRef.get();
+  if (paymentSnapAntes.exists) {
+    return;
+  }
+
   let ref = {};
   try {
     ref = JSON.parse(payment.external_reference || "{}");
   } catch (e) {
     console.warn("external_reference não era um JSON válido:", payment.external_reference);
   }
-  const { uid, ref: referralCode, tipo, creditos } = ref;
+  const { uid, ref: referralCode, tipo, creditos, cupom: cupomCodigo } = ref;
   if (!uid) {
     console.warn("Pagamento aprovado sem uid no external_reference, ignorando.");
     return;
@@ -53,7 +65,7 @@ async function handleApprovedPayment(payment) {
       { merge: true }
     );
 
-    await db.collection("payments").doc(String(payment.id)).set({
+    await paymentRef.set({
       userId: uid,
       amount: payment.transaction_amount,
       period: currentPeriod(),
@@ -93,6 +105,7 @@ async function handleApprovedPayment(payment) {
       // reset acontece na data de renovação de cada pessoa, não num dia fixo
       budgetSpentBRL: 0,
       budgetCycleStart: admin.firestore.FieldValue.serverTimestamp(),
+      ...(cupomCodigo ? { lastCouponCode: cupomCodigo } : {}),
       ...(ehAssinaturaManual
         ? {
             subscriptionPaymentMethod: "manual",
@@ -107,14 +120,22 @@ async function handleApprovedPayment(payment) {
   );
 
   // registro simples de todo pagamento aprovado, para o painel admin somar receita
-  await db.collection("payments").doc(String(payment.id)).set({
+  await paymentRef.set({
     userId: uid,
     amount: payment.transaction_amount,
     period: currentPeriod(),
     referralCode: referralCode || null,
     paymentMethod: metodoPagamento,
+    couponCode: cupomCodigo || null,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
+
+  // O cupom só conta como "usado" na primeira cobrança de cada assinante —
+  // não em cada renovação automática seguinte do cartão (senão o limite de
+  // usos do cupom seria consumido sozinho, todo mês, pela mesma pessoa).
+  if (cupomCodigo && !jaTinhaPrimeiroPagamento) {
+    await registrarUsoCupom(cupomCodigo);
+  }
 
   if (referralCode) {
     const affiliateSnap = await db
