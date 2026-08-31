@@ -1,7 +1,8 @@
 const { getAuthedUser, db } = require("../lib/firebaseAdmin");
+const { buscarCupomValido, precoComDesconto } = require("../lib/coupons");
 
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || "http://localhost:3000";
-const MONTHLY_PRICE = Number(process.env.MONTHLY_PRICE || 50);
+const MONTHLY_PRICE = Number(process.env.MONTHLY_PRICE || 70);
 
 // Cria um pagamento AVULSO (não recorrente) equivalente a 1 mês de assinatura,
 // pra quem prefere pagar por Pix em vez de cartão. Diferente da assinatura por
@@ -27,10 +28,15 @@ module.exports = async (req, res) => {
     const userDoc = await db.collection("users").doc(user.uid).get();
     const referralCode = userDoc.exists ? userDoc.data().referredByCode || "" : "";
 
+    const { cupom: cupomCodigo } = req.body || {};
+    const cupom = await buscarCupomValido(cupomCodigo);
+    const valorFinal = precoComDesconto(MONTHLY_PRICE, cupom);
+
     const externalReference = JSON.stringify({
       uid: user.uid,
       ref: referralCode,
       tipo: "assinatura_manual",
+      cupom: cupom ? cupom.codigo : null,
     });
 
     const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
@@ -44,7 +50,7 @@ module.exports = async (req, res) => {
           {
             title: "Assinatura mensal (Pix) — Minha Nutri",
             quantity: 1,
-            unit_price: MONTHLY_PRICE,
+            unit_price: valorFinal,
             currency_id: "BRL",
           },
         ],
