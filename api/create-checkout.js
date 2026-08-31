@@ -1,7 +1,8 @@
 const { getAuthedUser, db } = require("../lib/firebaseAdmin");
+const { buscarCupomValido, precoComDesconto } = require("../lib/coupons");
 
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || "http://localhost:3000";
-const MONTHLY_PRICE = Number(process.env.MONTHLY_PRICE || 50);
+const MONTHLY_PRICE = Number(process.env.MONTHLY_PRICE || 70);
 
 // Cria uma assinatura (preapproval) no Mercado Pago.
 //
@@ -34,8 +35,19 @@ module.exports = async (req, res) => {
   const userDoc = await db.collection("users").doc(authedUser.uid).get();
   const referralCode = userDoc.exists ? userDoc.data().referredByCode || "" : "";
 
-  const externalReference = JSON.stringify({ uid: authedUser.uid, ref: referralCode });
-  const { token } = req.body || {};
+  const { token, cupom: cupomCodigo } = req.body || {};
+
+  // o cupom é validado de novo aqui (nunca confiamos num preço calculado no
+  // navegador) — se for válido, o valor com desconto vira a mensalidade da
+  // assinatura inteira, enquanto ela durar
+  const cupom = await buscarCupomValido(cupomCodigo);
+  const valorFinal = precoComDesconto(MONTHLY_PRICE, cupom);
+
+  const externalReference = JSON.stringify({
+    uid: authedUser.uid,
+    ref: referralCode,
+    cupom: cupom ? cupom.codigo : null,
+  });
 
   const body = {
     reason: "Assinatura mensal — Minha Nutri",
@@ -45,7 +57,7 @@ module.exports = async (req, res) => {
     auto_recurring: {
       frequency: 1,
       frequency_type: "months",
-      transaction_amount: MONTHLY_PRICE,
+      transaction_amount: valorFinal,
       currency_id: "BRL",
     },
   };
