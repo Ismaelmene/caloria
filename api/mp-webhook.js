@@ -72,6 +72,15 @@ async function handleApprovedPayment(payment) {
   const userSnapAntes = await userRef.get();
   const jaTinhaPrimeiroPagamento = userSnapAntes.exists && userSnapAntes.data().firstPaymentAt;
 
+  // Pagamento "assinatura_manual" (ex.: Pix, cobrança avulsa) não tem
+  // renovação automática no Mercado Pago — diferente da assinatura por
+  // cartão (preapproval), que renova sozinha e é atualizada via
+  // handlePreapprovalUpdate. Por isso guardamos até quando esse pagamento
+  // vale (30 dias); passado esse prazo sem um novo pagamento, o acesso volta
+  // a ficar bloqueado sozinho (ver temAssinaturaOuTeste em lib/budget.js).
+  const trintaDiasMs = 30 * 24 * 60 * 60 * 1000;
+  const ehAssinaturaManual = tipo === "assinatura_manual";
+
   await userRef.set(
     {
       subscriptionStatus: "active",
@@ -84,6 +93,15 @@ async function handleApprovedPayment(payment) {
       // reset acontece na data de renovação de cada pessoa, não num dia fixo
       budgetSpentBRL: 0,
       budgetCycleStart: admin.firestore.FieldValue.serverTimestamp(),
+      ...(ehAssinaturaManual
+        ? {
+            subscriptionPaymentMethod: "manual",
+            subscriptionExpiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + trintaDiasMs),
+          }
+        : {
+            subscriptionPaymentMethod: "cartao_recorrente",
+            subscriptionExpiresAt: admin.firestore.FieldValue.delete(),
+          }),
     },
     { merge: true }
   );
