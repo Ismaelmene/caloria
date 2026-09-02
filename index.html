@@ -158,7 +158,7 @@
     margin-bottom: 16px;
   }
   .card h2 { margin-top: 0; font-size: 17px; }
-  input, select {
+  input, select, textarea {
     width: 100%;
     padding: 10px 12px;
     margin: 6px 0 14px;
@@ -167,6 +167,7 @@
     background: #0d141b;
     color: var(--text);
     font-size: 14px;
+    font-family: inherit;
   }
   label { font-size: 13px; color: var(--muted); }
   button.primary {
@@ -324,6 +325,24 @@
     border: 4px solid var(--panel); font-size: 22px; font-weight: 800; cursor: pointer;
     display: flex; align-items: center; justify-content: center; margin-top: -20px;
     font-family: inherit; box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+  }
+
+  /* ---------------- Suporte (chamados) ---------------- */
+  .ticket-card { background: #0d141b; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .ticket-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .ticket-head .th-info strong { display: block; font-size: 13px; }
+  .ticket-head .th-info span { font-size: 12px; color: var(--muted); }
+  .ticket-thread { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+  .ticket-msg { max-width: 85%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; }
+  .ticket-msg.cliente { align-self: flex-start; background: #131a22; border: 1px solid var(--border); }
+  .ticket-msg.admin { align-self: flex-end; background: rgba(62,207,142,0.15); border: 1px solid rgba(62,207,142,0.3); }
+  .ticket-msg .tm-meta { display: block; font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .ticket-reply { display: flex; gap: 8px; margin-top: 8px; }
+  .ticket-reply textarea { flex: 1; margin: 0; min-height: 44px; resize: vertical; }
+  .badge.warn { background: rgba(255,190,80,0.15); color: #ffbe50; }
+  .sidebar-count {
+    display: inline-block; min-width: 18px; padding: 1px 6px; border-radius: 999px;
+    background: var(--danger); color: #fff; font-size: 10px; font-weight: 800; margin-left: 6px; text-align: center;
   }
 
   .hero-card {
@@ -638,7 +657,7 @@
             <tr><td>Disponibilidade</td><td>Só no horário marcado</td><td>24 horas, todos os dias</td></tr>
             <tr><td>Calorias do prato</td><td>Você calcula na mão</td><td>Foto e pronto</td></tr>
             <tr><td>Tirar uma dúvida rápida</td><td>Espera a próxima consulta</td><td>Na hora, pelo chat</td></tr>
-            <tr><td>Custo mensal</td><td>Geralmente bem mais caro</td><td>R$ 70/mês</td></tr>
+            <tr><td>Custo mensal com acompanhamento</td><td>Mais de R$ 1.500/mês</td><td id="landingPriceCompareCell">R$ 70/mês</td></tr>
           </tbody>
         </table>
       </div>
@@ -664,7 +683,8 @@
 
     <div class="landing-section">
       <div class="landing-price-box">
-        <div class="price">R$ 70<small>/mês</small></div>
+        <div id="landingCupomBadge" class="hidden" style="display:inline-block; background:var(--accent); color:#06210f; font-weight:700; font-size:12px; padding:4px 10px; border-radius:999px; margin-bottom:8px;"></div>
+        <div class="price" id="landingPriceBox">R$ 70<small>/mês</small></div>
         <p class="muted" style="margin:8px 0 16px;">Todos os recursos inclusos. Sem letras miúdas: cancele quando quiser, direto pelo Mercado Pago, sem multa.</p>
         <button class="primary" onclick="irParaCadastro()">Assinar agora</button>
       </div>
@@ -689,6 +709,12 @@
     <div class="landing-section" id="authForm">
       <h2 id="authTitle">Entrar</h2>
       <div class="auth-card">
+        <div id="authExtraFields" class="hidden">
+          <label>Nome completo</label>
+          <input id="authNome" type="text" placeholder="Seu nome" />
+          <label>Celular / WhatsApp</label>
+          <input id="authTelefone" type="tel" placeholder="(11) 91234-5678" />
+        </div>
         <label>E-mail</label>
         <input id="authEmail" type="email" placeholder="seu@email.com" />
         <label>Senha</label>
@@ -1115,6 +1141,28 @@
     </table>
   </section>
 
+  <!-- ---------------- SUPORTE (cliente) ---------------- -->
+  <section id="view-suporte" class="card hidden" style="background:transparent; border:none; padding:0;">
+    <h2 style="margin:0 0 6px;">Suporte</h2>
+    <p class="muted" style="margin:0 0 16px;">Dúvida, sugestão de melhoria ou algum problema? Manda aqui — eu respondo pelo painel.</p>
+
+    <div class="card">
+      <label>Sobre o que é?</label>
+      <div class="chip-row" id="suporteAssuntoChips">
+        <button type="button" class="chip active" data-obj="duvida">Dúvida</button>
+        <button type="button" class="chip" data-obj="sugestao">Sugestão</button>
+        <button type="button" class="chip" data-obj="problema">Problema</button>
+      </div>
+      <label>Mensagem</label>
+      <textarea id="suporteMensagemInput" rows="4" style="width:100%; margin:6px 0 14px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:#0d141b; color:var(--text); font-family:inherit; font-size:14px;" placeholder="Escreva aqui..."></textarea>
+      <button class="primary" onclick="window.enviarTicketSuporte()">Enviar</button>
+      <p class="muted" id="suporteEnvioStatus"></p>
+    </div>
+
+    <h3 style="margin-top:22px;">Seus chamados</h3>
+    <div id="suporteListaCliente"><p class="muted">Carregando...</p></div>
+  </section>
+
   <!-- ---------------- PAINEL ADMIN ---------------- -->
   <section id="view-admin" class="card hidden">
     <div class="admin-header">
@@ -1129,6 +1177,7 @@
       <button type="button" class="admin-sidebar-item" data-sub="cupons" onclick="showAdminSection('cupons')">🎟️ Cupons de desconto</button>
       <button type="button" class="admin-sidebar-item" data-sub="afiliados" onclick="showAdminSection('afiliados')">🤝 Afiliados</button>
       <button type="button" class="admin-sidebar-item" data-sub="promover" onclick="showAdminSection('promover')">⭐ Promover usuário</button>
+      <button type="button" class="admin-sidebar-item" data-sub="suporte" onclick="showAdminSection('suporte')">🎧 Suporte<span id="suporteAbertosBadge" class="sidebar-count hidden">0</span></button>
     </nav>
 
     <!-- ---------- Visão geral (dashboard) ---------- -->
@@ -1194,7 +1243,7 @@
         <table id="adminBudgetTable">
           <thead>
             <tr>
-              <th>Usuário</th>
+              <th>Cliente</th>
               <th>Assinatura</th>
               <th>Acesso</th>
               <th>Pagamento</th>
@@ -1238,6 +1287,11 @@
           <input id="cupomLimiteAdmin" type="number" placeholder="Sem limite" />
         </div>
       </div>
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="cupomDestaqueAdmin" style="width:auto; margin:0;" />
+        <span>Destacar esse desconto na página de vendas (mostra o preço já com desconto pra quem ainda não é cliente)</span>
+      </label>
+      <p class="muted" style="margin:2px 0 12px;">Só um cupom fica em destaque por vez — ativar esse aqui desliga o destaque de qualquer outro automaticamente.</p>
       <button class="primary" onclick="criarCupom()">Criar cupom</button>
       <p class="muted" id="cupomStatusAdmin"></p>
 
@@ -1250,6 +1304,7 @@
               <th>Válido até</th>
               <th>Usos</th>
               <th>Status</th>
+              <th>Página de vendas</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -1287,6 +1342,12 @@
       <button class="primary" onclick="promoteUser()">Aplicar</button>
       <p class="muted" id="promoteStatus"></p>
     </div>
+
+    <!-- ---------- Suporte (chamados dos clientes) ---------- -->
+    <div id="admin-sub-suporte" class="admin-sub hidden">
+      <p class="muted">Chamados abertos pelos clientes (dúvidas, sugestões, problemas). Responda direto por aqui.</p>
+      <div id="adminSuporteLista"><p class="muted">Carregando...</p></div>
+    </div>
   </section>
 
 </main>
@@ -1306,7 +1367,7 @@ import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc, query, where, getDocs, orderBy, limit, increment, Timestamp, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc, query, where, getDocs, orderBy, limit, increment, Timestamp, serverTimestamp, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // ⚠️ Cole aqui a configuração do SEU projeto Firebase
@@ -1398,6 +1459,13 @@ function renderHeaderActions() {
     adminBtn.onclick = () => showView("admin");
     el.appendChild(adminBtn);
   } else {
+    const suporteBtn = document.createElement("button");
+    suporteBtn.className = "header-icon-btn";
+    suporteBtn.textContent = "🎧";
+    suporteBtn.title = "Suporte";
+    suporteBtn.onclick = () => showView("suporte");
+    el.appendChild(suporteBtn);
+
     const bellWrap = document.createElement("div");
     bellWrap.className = "bell-wrap";
     bellWrap.innerHTML = `
@@ -1437,7 +1505,45 @@ window.showView = function (name) {
   if (name === "peso") loadWeightHistory();
   if (name === "afiliado") loadAffiliatePanel();
   if (name === "admin") loadAdminPanel();
+  if (name === "suporte") loadSuporteCliente();
 };
+
+// ---------- Cupom em destaque na página de vendas ----------
+// Busca (sem precisar estar logado) se tem algum cupom marcado como
+// "mostrar na página de vendas" no painel admin e, se tiver, atualiza os
+// preços mostrados pra quem ainda não é cliente (bloco de preço da landing
+// + tabela comparativa). O mesmo resultado é reaproveitado depois na tela de
+// assinatura pra aplicar esse cupom sozinho, sem a pessoa precisar digitar o
+// código de novo.
+window._state.featuredCouponPromise = (async function carregarCupomDestaqueLanding() {
+  try {
+    const res = await fetch("/api/featured-coupon");
+    const data = await res.json();
+    if (!data || !data.ativo) return null;
+
+    const fmt = (v) => "R$ " + Number(v).toFixed(2).replace(".", ",");
+    const precoFinalLabel = fmt(data.precoFinal);
+    const precoOriginalLabel = fmt(data.precoOriginal);
+    const descontoLabel = data.tipo === "fixo" ? fmt(data.valor) + " OFF" : data.valor + "% OFF";
+
+    const badge = document.getElementById("landingCupomBadge");
+    if (badge) {
+      badge.textContent = `Cupom ${data.codigo} aplicado — ${descontoLabel}`;
+      badge.classList.remove("hidden");
+    }
+    const priceBox = document.getElementById("landingPriceBox");
+    if (priceBox) {
+      priceBox.innerHTML = `<span style="text-decoration:line-through; opacity:0.55; font-size:18px; margin-right:6px;">${precoOriginalLabel}</span>${precoFinalLabel}<small>/mês</small>`;
+    }
+    const compareCell = document.getElementById("landingPriceCompareCell");
+    if (compareCell) {
+      compareCell.innerHTML = `<span style="text-decoration:line-through; opacity:0.55;">${precoOriginalLabel}/mês</span> ${precoFinalLabel}/mês`;
+    }
+    return data;
+  } catch (e) {
+    return null;
+  }
+})();
 
 // ---------- Login / cadastro ----------
 let isSignupMode = false;
@@ -1454,6 +1560,7 @@ function syncAuthModeUI() {
   document.getElementById("authToggleLink").textContent = isSignupMode
     ? "Já tenho conta — entrar"
     : "Ainda não tenho conta — criar cadastro";
+  document.getElementById("authExtraFields").classList.toggle("hidden", !isSignupMode);
 }
 
 window.toggleAuthMode = function (e) {
@@ -1474,13 +1581,21 @@ window.irParaCadastro = function () {
 window.handleAuthSubmit = async function () {
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value;
+  const nome = document.getElementById("authNome").value.trim();
+  const telefone = document.getElementById("authTelefone").value.trim();
   const errEl = document.getElementById("authError");
   errEl.textContent = "";
   try {
     if (isSignupMode) {
+      if (!nome || !telefone) {
+        errEl.textContent = "Preencha seu nome e celular pra continuar.";
+        return;
+      }
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await setDoc(doc(db, "users", cred.user.uid), {
         email,
+        nome,
+        telefone,
         role: "user",
         referredByCode: refCode || null,
         // sem teste grátis automático — a pessoa só usa o app depois de
@@ -1599,6 +1714,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById("bottomNav").classList.add("hidden");
     showView("paywall");
     iniciarCardBrick();
+    aplicarCupomDestaqueNoPaywall();
     return;
   }
 
@@ -1987,6 +2103,24 @@ window.aplicarCupom = async function () {
     feedback.textContent = "Erro ao validar cupom: " + e.message;
   }
 };
+
+// Se tiver um cupom em destaque na página de vendas, já aplica ele sozinho
+// assim que a pessoa cai na tela de assinatura — assim o preço que ela viu
+// na página de vendas é exatamente o que ela paga, sem precisar digitar o
+// código de novo. Só faz isso se o campo de cupom ainda estiver vazio (não
+// sobrescreve um código que a pessoa já tenha digitado na mão).
+async function aplicarCupomDestaqueNoPaywall() {
+  try {
+    const destaque = await window._state.featuredCouponPromise;
+    if (!destaque || !destaque.codigo) return;
+    const input = document.getElementById("cupomInput");
+    if (!input || input.value.trim() || window._cupomAplicado) return;
+    input.value = destaque.codigo;
+    await window.aplicarCupom();
+  } catch (e) {
+    // silencioso — se der erro, a pessoa ainda pode digitar o cupom na mão
+  }
+}
 
 window.selecionarMetodoPagamento = function (metodo) {
   const tabCard = document.getElementById("payTabCard");
@@ -2900,6 +3034,122 @@ window.copyAffiliateLink = function () {
   document.execCommand("copy");
 };
 
+// ---------- Suporte (cliente) ----------
+const SUPORTE_ASSUNTO_LABEL = { duvida: "Dúvida", sugestao: "Sugestão", problema: "Problema" };
+
+window.enviarTicketSuporte = async function () {
+  const statusEl = document.getElementById("suporteEnvioStatus");
+  const mensagem = document.getElementById("suporteMensagemInput").value.trim();
+  const assunto = getActiveChip("suporteAssuntoChips") || "duvida";
+  if (!mensagem) {
+    statusEl.textContent = "Escreva sua mensagem antes de enviar.";
+    return;
+  }
+  statusEl.textContent = "Enviando...";
+  try {
+    const uData = window._state.userData || {};
+    await addDoc(collection(db, "supportTickets"), {
+      uid: window._state.user.uid,
+      userName: uData.nome || "—",
+      userPhone: uData.telefone || "—",
+      userEmail: uData.email || window._state.user.email || "—",
+      assunto,
+      status: "aberto",
+      mensagens: [{ autor: "cliente", texto: mensagem, criadoEm: new Date().toISOString() }],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    document.getElementById("suporteMensagemInput").value = "";
+    statusEl.textContent = "Enviado! A gente te responde por aqui mesmo.";
+    loadSuporteCliente();
+  } catch (e) {
+    statusEl.textContent = "Erro ao enviar: " + e.message;
+  }
+};
+
+function ticketMensagensHTML(mensagens) {
+  return (mensagens || [])
+    .map((m) => {
+      const quando = m.criadoEm ? new Date(m.criadoEm).toLocaleString("pt-BR") : "";
+      return `
+        <div class="ticket-msg ${m.autor === "admin" ? "admin" : "cliente"}">
+          ${m.texto}
+          <span class="tm-meta">${m.autor === "admin" ? "Suporte" : "Você"} · ${quando}</span>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function ticketStatusBadge(status) {
+  if (status === "respondido") return `<span class="badge active">Respondido</span>`;
+  if (status === "fechado") return `<span class="badge">Fechado</span>`;
+  return `<span class="badge warn">Aguardando resposta</span>`;
+}
+
+async function loadSuporteCliente() {
+  const el = document.getElementById("suporteListaCliente");
+  if (!el || !window._state.user) return;
+  el.innerHTML = `<p class="muted">Carregando...</p>`;
+  try {
+    // sem orderBy na query (só o "where") de propósito — combinar os dois
+    // exigiria criar um índice composto no Firebase Console; como cada
+    // pessoa tem poucos chamados, ordenamos aqui mesmo, depois de buscar.
+    const snap = await getDocs(query(collection(db, "supportTickets"), where("uid", "==", window._state.user.uid)));
+    const docsOrdenados = [...snap.docs].sort((a, b) => {
+      const ta = a.data().updatedAt?.toMillis ? a.data().updatedAt.toMillis() : 0;
+      const tb = b.data().updatedAt?.toMillis ? b.data().updatedAt.toMillis() : 0;
+      return tb - ta;
+    });
+    if (docsOrdenados.length === 0) {
+      el.innerHTML = `<p class="muted">Você ainda não abriu nenhum chamado.</p>`;
+      return;
+    }
+    el.innerHTML = docsOrdenados
+      .map((d) => {
+        const t = d.data();
+        const fechado = t.status === "fechado";
+        return `
+          <div class="ticket-card">
+            <div class="ticket-head">
+              <div class="th-info">
+                <strong>${SUPORTE_ASSUNTO_LABEL[t.assunto] || "Dúvida"}</strong>
+                <span>${t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString("pt-BR") : ""}</span>
+              </div>
+              ${ticketStatusBadge(t.status)}
+            </div>
+            <div class="ticket-thread">${ticketMensagensHTML(t.mensagens)}</div>
+            ${
+              fechado
+                ? ""
+                : `
+              <div class="ticket-reply">
+                <textarea id="clienteResposta_${d.id}" placeholder="Responder..."></textarea>
+                <button class="secondary" onclick="window.enviarRespostaCliente('${d.id}')">Enviar</button>
+              </div>
+            `
+            }
+          </div>
+        `;
+      })
+      .join("");
+  } catch (e) {
+    el.innerHTML = `<p class="muted">Não foi possível carregar seus chamados.</p>`;
+  }
+}
+
+window.enviarRespostaCliente = async function (ticketId) {
+  const textEl = document.getElementById(`clienteResposta_${ticketId}`);
+  const texto = textEl.value.trim();
+  if (!texto) return;
+  await updateDoc(doc(db, "supportTickets", ticketId), {
+    mensagens: arrayUnion({ autor: "cliente", texto, criadoEm: new Date().toISOString() }),
+    status: "aberto",
+    updatedAt: serverTimestamp(),
+  });
+  loadSuporteCliente();
+};
+
 // ---------- Painel admin ----------
 // Precisa bater com o valor de ORCAMENTO_MENSAL_BRL configurado no servidor
 // (lib/budget.js / variável de ambiente ORCAMENTO_MENSAL_BRL) — só usado aqui
@@ -2954,6 +3204,8 @@ function renderAdminBudgetTable(usersSnap) {
     const gasto = u.budgetSpentBRL || 0;
     const creditos = u.extraCredits || 0;
     const email = u.email || uid.slice(0, 10) + "...";
+    const nomeCliente = u.nome || "—";
+    const telefoneCliente = u.telefone || "—";
     const pct = Math.min(100, Math.round((gasto / ORCAMENTO_MENSAL_BRL_ADMIN) * 100));
     const statusLabel = STATUS_ASSINATURA_LABEL[u.subscriptionStatus] || u.subscriptionStatus || "Sem assinatura";
 
@@ -2964,7 +3216,7 @@ function renderAdminBudgetTable(usersSnap) {
     const temTeste = u.trialGrantedByAdmin === true;
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${email}</td>
+      <td><strong>${nomeCliente}</strong><br/><span class="muted">${email}</span><br/><span class="muted">${telefoneCliente}</span></td>
       <td><span class="badge ${u.subscriptionStatus === "active" ? "active" : ""}">${statusLabel}</span></td>
       <td>${acessoLabelHTML(u)}</td>
       <td>${u.lastPaymentMethod || "—"}</td>
@@ -3015,6 +3267,19 @@ window.alternarTesteGratis = async function (uid, ativar) {
 };
 
 // ---------- Cupons de desconto (painel admin) ----------
+
+// Só um cupom pode estar em destaque na página de vendas por vez — antes de
+// ligar o destaque num cupom, desliga de qualquer outro que já estivesse
+// marcado (senão a página de vendas não saberia qual dos dois mostrar).
+async function desmarcarOutrosDestaques(codigoQueFica) {
+  const snap = await getDocs(query(collection(db, "coupons"), where("mostrarNaLanding", "==", true)));
+  for (const d of snap.docs) {
+    if (d.id !== codigoQueFica) {
+      await updateDoc(doc(db, "coupons", d.id), { mostrarNaLanding: false });
+    }
+  }
+}
+
 window.criarCupom = async function () {
   const statusEl = document.getElementById("cupomStatusAdmin");
   const codigo = document.getElementById("cupomCodigoAdmin").value.trim().toUpperCase();
@@ -3022,6 +3287,7 @@ window.criarCupom = async function () {
   const valor = Number(document.getElementById("cupomValorAdmin").value);
   const validadeStr = document.getElementById("cupomValidadeAdmin").value;
   const limiteStr = document.getElementById("cupomLimiteAdmin").value;
+  const destaque = document.getElementById("cupomDestaqueAdmin").checked;
 
   if (!codigo) {
     statusEl.textContent = "Digite um código pro cupom.";
@@ -3038,11 +3304,13 @@ window.criarCupom = async function () {
 
   statusEl.textContent = "Criando...";
   try {
+    if (destaque) await desmarcarOutrosDestaques(codigo);
     await setDoc(doc(db, "coupons", codigo), {
       tipo,
       valor,
       ativo: true,
       usosAtuais: 0,
+      mostrarNaLanding: destaque,
       ...(validadeStr ? { validoAte: Timestamp.fromDate(new Date(validadeStr + "T23:59:59")) } : {}),
       ...(limiteStr ? { usosMax: Number(limiteStr) } : {}),
       createdAt: serverTimestamp(),
@@ -3051,10 +3319,21 @@ window.criarCupom = async function () {
     document.getElementById("cupomValorAdmin").value = "";
     document.getElementById("cupomValidadeAdmin").value = "";
     document.getElementById("cupomLimiteAdmin").value = "";
+    document.getElementById("cupomDestaqueAdmin").checked = false;
     statusEl.textContent = `Cupom ${codigo} criado!`;
     loadAdminPanel();
   } catch (e) {
     statusEl.textContent = "Erro ao criar cupom: " + e.message;
+  }
+};
+
+window.alternarDestaqueLanding = async function (codigo, ativar) {
+  try {
+    if (ativar) await desmarcarOutrosDestaques(codigo);
+    await updateDoc(doc(db, "coupons", codigo), { mostrarNaLanding: ativar });
+    loadAdminPanel();
+  } catch (e) {
+    alert("Erro ao alterar destaque na página de vendas: " + e.message);
   }
 };
 
@@ -3102,6 +3381,8 @@ function renderAdminCouponsTable(couponsSnap) {
       statusClasse = "inactive";
     }
 
+    const emDestaque = !!c.mostrarNaLanding;
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${codigo}</td>
@@ -3109,6 +3390,10 @@ function renderAdminCouponsTable(couponsSnap) {
       <td>${validadeLabel}</td>
       <td>${usosLabel}</td>
       <td><span class="badge ${statusClasse}">${statusLabel}</span></td>
+      <td>
+        ${emDestaque ? '<span class="badge active">Em destaque</span>' : '<span class="muted">—</span>'}<br/>
+        <button class="secondary" style="padding:4px 8px; margin-top:4px;" onclick="alternarDestaqueLanding('${codigo}', ${!emDestaque})">${emDestaque ? "Remover destaque" : "Destacar"}</button>
+      </td>
       <td>
         <button class="secondary" style="padding:4px 8px;" onclick="alternarCupomAtivo('${codigo}', ${c.ativo === false})">${c.ativo === false ? "Ativar" : "Desativar"}</button>
         <button class="secondary" style="padding:4px 8px;" onclick="excluirCupom('${codigo}')">Excluir</button>
@@ -3140,6 +3425,7 @@ window.showAdminSection = function (name) {
     cupons: "Cupons de desconto",
     afiliados: "Afiliados",
     promover: "Promover usuário",
+    suporte: "Suporte",
   };
   document.getElementById("adminSectionTitle").textContent = titulos[name] || "Painel administrativo";
   fecharAdminMenu();
@@ -3341,7 +3627,81 @@ async function loadAdminPanel() {
     tbody.appendChild(tr);
   }
   document.getElementById("adminTotalCommissions").textContent = "R$ " + totalCommissions.toFixed(2);
+
+  await loadAdminSuporte();
 }
+
+// ---------- Suporte (admin) ----------
+async function loadAdminSuporte() {
+  const el = document.getElementById("adminSuporteLista");
+  const badge = document.getElementById("suporteAbertosBadge");
+  if (!el) return;
+  el.innerHTML = `<p class="muted">Carregando...</p>`;
+  try {
+    const snap = await getDocs(query(collection(db, "supportTickets"), orderBy("updatedAt", "desc")));
+    const abertos = snap.docs.filter((d) => d.data().status === "aberto").length;
+    if (badge) {
+      badge.textContent = String(abertos);
+      badge.classList.toggle("hidden", abertos === 0);
+    }
+    if (snap.empty) {
+      el.innerHTML = `<p class="muted">Nenhum chamado por enquanto.</p>`;
+      return;
+    }
+    el.innerHTML = snap.docs
+      .map((d) => {
+        const t = d.data();
+        const fechado = t.status === "fechado";
+        return `
+          <div class="ticket-card">
+            <div class="ticket-head">
+              <div class="th-info">
+                <strong>${t.userName || "—"}</strong>
+                <span>${t.userEmail || "—"} · ${t.userPhone || "—"}</span>
+                <span>${SUPORTE_ASSUNTO_LABEL[t.assunto] || "Dúvida"} · ${t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString("pt-BR") : ""}</span>
+              </div>
+              ${ticketStatusBadge(t.status)}
+            </div>
+            <div class="ticket-thread">${ticketMensagensHTML(t.mensagens)}</div>
+            ${
+              fechado
+                ? ""
+                : `
+              <div class="ticket-reply">
+                <textarea id="adminResposta_${d.id}" placeholder="Escreva sua resposta..."></textarea>
+                <button class="primary" onclick="window.enviarRespostaAdmin('${d.id}')">Enviar</button>
+              </div>
+              <button class="secondary" style="margin-top:8px; padding:6px 10px; font-size:12px;" onclick="window.fecharTicket('${d.id}')">Marcar como resolvido</button>
+            `
+            }
+          </div>
+        `;
+      })
+      .join("");
+  } catch (e) {
+    el.innerHTML = `<p class="muted">Não foi possível carregar os chamados: ${e.message}</p>`;
+  }
+}
+
+window.enviarRespostaAdmin = async function (ticketId) {
+  const textEl = document.getElementById(`adminResposta_${ticketId}`);
+  const texto = textEl.value.trim();
+  if (!texto) return;
+  await updateDoc(doc(db, "supportTickets", ticketId), {
+    mensagens: arrayUnion({ autor: "admin", texto, criadoEm: new Date().toISOString() }),
+    status: "respondido",
+    updatedAt: serverTimestamp(),
+  });
+  loadAdminSuporte();
+};
+
+window.fecharTicket = async function (ticketId) {
+  await updateDoc(doc(db, "supportTickets", ticketId), {
+    status: "fechado",
+    updatedAt: serverTimestamp(),
+  });
+  loadAdminSuporte();
+};
 
 window.promoteUser = async function () {
   const statusEl = document.getElementById("promoteStatus");
