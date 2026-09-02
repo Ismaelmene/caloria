@@ -241,6 +241,89 @@
   .goal-row input { width: 90px; margin: 0; padding: 4px 8px; }
   ul.recipe-list { margin: 4px 0 12px; padding-left: 20px; font-size: 13px; }
   ol.recipe-steps { margin: 4px 0 12px; padding-left: 20px; font-size: 13px; line-height: 1.6; }
+
+  /* ---------------- Tela inicial (home) ---------------- */
+  .row-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .row-between strong { font-size: 14px; }
+  .home-weight-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .home-weight-col .hwc-label { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+  .home-weight-col .hwc-value { font-size: 24px; font-weight: 800; }
+  .home-weight-col .hwc-value.sm { font-size: 18px; font-weight: 700; color: var(--text); }
+  .weight-ring { width: 68px; height: 68px; flex: none; }
+  .weight-ring .donut-hole { width: 50px; height: 50px; font-size: 12px; font-weight: 800; }
+  .home-goal-date { font-size: 12px; color: var(--muted); margin: 10px 0 2px; }
+  .home-weight-quick { display: flex; gap: 8px; margin-top: 12px; }
+  .home-weight-quick input { margin: 0; }
+  .home-weight-quick button { white-space: nowrap; }
+  .weight-goal-editor { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .weight-goal-editor .wge-row { display: flex; gap: 8px; }
+  .weight-goal-editor .wge-row > div { flex: 1; }
+
+  .plano-hoje-scroll { display: flex; gap: 14px; overflow-x: auto; padding: 6px 2px 2px; margin-top: 4px; }
+  .plano-hoje-item { flex: 0 0 auto; text-align: center; width: 66px; cursor: pointer; }
+  .plano-hoje-item .phi-circle {
+    width: 58px; height: 58px; border-radius: 50%; background: #0d141b; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 6px;
+  }
+  .plano-hoje-item .phi-name { font-size: 11px; font-weight: 700; line-height: 1.2; }
+  .plano-hoje-item .phi-time { font-size: 10px; color: var(--muted); }
+  .plano-hoje-empty { font-size: 13px; color: var(--muted); }
+
+  .metas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
+  .meta-box-mini { text-align: center; }
+  .meta-box-mini .donut { width: 84px; height: 84px; }
+  .meta-box-mini .donut-hole { width: 60px; height: 60px; font-size: 13px; }
+  .meta-box-mini .mb-title { font-size: 12px; font-weight: 700; margin-top: 8px; }
+  .meta-box-mini .mb-sub { font-size: 11px; color: var(--muted); }
+
+  .receitas-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 6px 2px 2px; margin-top: 4px; }
+  .receita-card-mini {
+    flex: 0 0 auto; width: 128px; background: #0d141b; border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px; cursor: pointer;
+  }
+  .receita-card-mini .rc-icon {
+    width: 100%; height: 60px; border-radius: 8px; background: rgba(62,207,142,0.12);
+    display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 8px;
+  }
+  .receita-card-mini .rc-name { font-size: 12px; font-weight: 700; line-height: 1.3; margin-bottom: 2px; }
+  .receita-card-mini .rc-kcal { font-size: 11px; color: var(--muted); }
+
+  .chat-teaser-card { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .chat-teaser-avatar {
+    width: 44px; height: 44px; border-radius: 50%; background: rgba(62,207,142,0.15);
+    display: flex; align-items: center; justify-content: center; font-size: 20px; flex: none; position: relative;
+  }
+  .chat-teaser-avatar .online-dot {
+    position: absolute; bottom: -1px; right: -1px; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--panel);
+  }
+  .chat-teaser-text strong { font-size: 14px; display: block; margin-bottom: 2px; }
+  .chat-teaser-text p { margin: 0; font-size: 12px; color: var(--muted); }
+
+  .today-goal-mini { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .today-goal-mini .tgm-value { font-size: 18px; font-weight: 800; }
+  .today-goal-mini .tgm-of { font-size: 12px; color: var(--muted); }
+
+  .bell-wrap { position: relative; }
+  .bell-panel {
+    position: absolute; top: 44px; right: 0; width: 250px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px; z-index: 40;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4); font-size: 13px; line-height: 1.4;
+  }
+  .bell-panel p { margin: 0 0 8px; }
+  .bell-panel p:last-child { margin-bottom: 0; }
+  .bell-dot {
+    position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+  }
+
+  .bottom-nav .bn-plus-wrap { flex: 1; display: flex; align-items: flex-start; justify-content: center; }
+  .bottom-nav .bn-plus-btn {
+    width: 46px; height: 46px; border-radius: 50%; background: var(--accent); color: #04140c;
+    border: 4px solid var(--panel); font-size: 22px; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; margin-top: -20px;
+    font-family: inherit; box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+  }
+
   .hero-card {
     background: linear-gradient(180deg, #131a22, #0d141b);
     border: 1px solid var(--border);
@@ -444,8 +527,8 @@
 <body>
 
 <header>
-  <h1>Minha Nutri</h1>
-  <div id="headerActions" style="display:flex; gap:8px;"></div>
+  <h1>🥗 Minha Nutri</h1>
+  <div id="headerActions" style="display:flex; gap:8px; align-items:center;"></div>
 </header>
 
 <main>
@@ -675,62 +758,132 @@
   <!-- ---------------- APP DO USUÁRIO ---------------- -->
   <section id="view-app" class="card hidden" style="background:transparent; border:none; padding:0;">
 
-    <div class="hero-card">
-      <div class="hero-top">
-        <div>
-          <div class="hero-kcal"><span id="todayCalories">0</span> kcal</div>
-          <div class="hero-kcal-of">de <span id="goalKcalLabel">2000</span> kcal · <span id="goalRemainingLabel">restam 2000</span></div>
-        </div>
-        <button class="link-btn" onclick="openMetaEditor()">Editar meta</button>
-      </div>
-      <div class="progress-track"><div class="progress-fill" id="goalProgressFill" style="width:0%;"></div></div>
-
-      <div class="macro-row">
-        <div class="macro-pill"><div class="v" id="todayProtein">0g</div><div class="l">Proteína</div></div>
-        <div class="macro-pill"><div class="v" id="todayCarbs">0g</div><div class="l">Carbo</div></div>
-        <div class="macro-pill"><div class="v" id="todayFat">0g</div><div class="l">Gordura</div></div>
-      </div>
-
-      <div id="metaEditor" class="hidden" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
-        <label>Meta diária de calorias</label>
-        <input id="dailyGoalInput" type="number" value="2000" />
-        <label>Seu objetivo</label>
-        <div class="chip-row" id="objetivoChips">
-          <button type="button" class="chip" data-obj="perder">Perder peso</button>
-          <button type="button" class="chip" data-obj="manter">Manter peso</button>
-          <button type="button" class="chip" data-obj="ganhar">Ganhar peso</button>
-        </div>
-        <button class="primary" style="margin-top:12px;" onclick="saveDailyGoal()">Salvar</button>
-      </div>
-    </div>
-
     <div id="subBanner" class="card" style="background:#0d141b;"></div>
 
-    <div class="quick-actions">
-      <button type="button" class="quick-action-btn accent" onclick="showView('registrar')">
-        <span class="qa-icon">📸</span>
-        <span class="qa-label">Análise de Prato</span>
-      </button>
-      <button type="button" class="quick-action-btn" onclick="showView('chat')">
-        <span class="qa-icon">💬</span>
-        <span class="qa-label">Falar com a Nutri</span>
-      </button>
-    </div>
-
+    <!-- Peso atual / objetivo -->
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <strong style="font-size:14px;">⚖️ Seu peso</strong>
-        <button class="link-btn" onclick="showView('peso')">Ver histórico</button>
+      <div class="home-weight-top">
+        <div class="home-weight-col">
+          <div class="hwc-label">Peso atual</div>
+          <div class="hwc-value" id="homeWeightCurrent">—</div>
+        </div>
+        <div class="home-weight-col" style="text-align:right;">
+          <div class="hwc-label">Objetivo</div>
+          <div class="hwc-value sm" id="homeGoalWeightLabel">—</div>
+        </div>
+        <div class="weight-ring donut" id="homeWeightRing">
+          <div class="donut-hole" id="homeWeightRingPct">—</div>
+        </div>
       </div>
-      <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:10px;">
-        <span style="font-size:22px; font-weight:800;" id="homeWeightCurrent">—</span>
+      <div class="home-goal-date" id="homeGoalDateLabel"></div>
+      <div class="row-between" style="margin-top:2px;">
         <span class="muted" id="homeWeightDelta10"></span>
+        <button class="link-btn" onclick="window.openWeightGoalEditor()">Editar meta</button>
       </div>
-      <div style="display:flex; gap:8px;">
-        <input id="homeWeightInput" type="number" step="0.1" placeholder="Registrar peso agora (kg)" style="margin:0;" />
-        <button class="primary" style="white-space:nowrap;" onclick="registerWeight('homeWeightInput', 'homeWeightStatus')">Salvar</button>
+
+      <div class="home-weight-quick">
+        <input id="homeWeightInput" type="number" step="0.1" placeholder="Registrar peso agora (kg)" />
+        <button class="primary" onclick="registerWeight('homeWeightInput', 'homeWeightStatus')">Salvar</button>
       </div>
       <p class="muted" id="homeWeightStatus"></p>
+
+      <div id="weightGoalEditor" class="weight-goal-editor hidden">
+        <div class="wge-row">
+          <div>
+            <label>Peso objetivo (kg)</label>
+            <input id="goalWeightInput" type="number" step="0.1" placeholder="Ex: 65" />
+          </div>
+          <div>
+            <label>Meta até (data)</label>
+            <input id="goalWeightDateInput" type="date" />
+          </div>
+        </div>
+        <button class="primary" onclick="window.saveWeightGoal()">Salvar meta</button>
+        <p class="muted" id="weightGoalStatus"></p>
+      </div>
+    </div>
+
+    <!-- Evolução do peso -->
+    <div class="card">
+      <div class="row-between">
+        <strong>Evolução do peso</strong>
+        <button class="link-btn" onclick="showView('peso')">Ver tudo</button>
+      </div>
+      <div id="homeWeightChart" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- Plano de hoje -->
+    <div class="card">
+      <div class="row-between">
+        <strong>Plano de hoje</strong>
+        <button class="link-btn" onclick="showView('plano')">Ver plano completo</button>
+      </div>
+      <div id="homePlanoHoje" class="plano-hoje-scroll">
+        <p class="plano-hoje-empty">Você ainda não tem um plano ativo.</p>
+      </div>
+    </div>
+
+    <!-- Metas -->
+    <div class="card">
+      <strong>Metas</strong>
+      <div class="metas-grid">
+        <div class="meta-box-mini">
+          <div class="donut" id="metaSemanalDonut"><div class="donut-hole" id="metaSemanalPct">—</div></div>
+          <div class="mb-title">Metas semanais</div>
+          <div class="mb-sub" id="metaSemanalLabel">—</div>
+        </div>
+        <div class="meta-box-mini">
+          <div class="donut" id="metaMensalDonut"><div class="donut-hole" id="metaMensalPct">—</div></div>
+          <div class="mb-title">Metas mensais</div>
+          <div class="mb-sub" id="metaMensalLabel">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Receitas para você -->
+    <div class="card">
+      <div class="row-between">
+        <strong>Receitas para você</strong>
+        <button class="link-btn" onclick="showView('receita')">Ver todas</button>
+      </div>
+      <div id="homeReceitasRow" class="receitas-scroll"></div>
+    </div>
+
+    <!-- Chat com a Nutri -->
+    <div class="card chat-teaser-card" onclick="showView('chat')">
+      <div class="chat-teaser-avatar">🥗<span class="online-dot"></span></div>
+      <div class="chat-teaser-text">
+        <strong>Chat com a Nutri</strong>
+        <p>Olá! Como posso te ajudar hoje?</p>
+      </div>
+    </div>
+
+    <!-- Meta calórica de hoje (compacto) -->
+    <div class="card today-goal-mini">
+      <div>
+        <div class="tgm-value"><span id="todayCalories">0</span> kcal</div>
+        <div class="tgm-of">de <span id="goalKcalLabel">2000</span> kcal · <span id="goalRemainingLabel">restam 2000</span></div>
+      </div>
+      <button class="link-btn" onclick="openMetaEditor()">Editar meta calórica</button>
+    </div>
+    <div class="progress-track" style="margin-top:-10px;"><div class="progress-fill" id="goalProgressFill" style="width:0%;"></div></div>
+
+    <div class="macro-row">
+      <div class="macro-pill"><div class="v" id="todayProtein">0g</div><div class="l">Proteína</div></div>
+      <div class="macro-pill"><div class="v" id="todayCarbs">0g</div><div class="l">Carbo</div></div>
+      <div class="macro-pill"><div class="v" id="todayFat">0g</div><div class="l">Gordura</div></div>
+    </div>
+
+    <div id="metaEditor" class="hidden" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+      <label>Meta diária de calorias</label>
+      <input id="dailyGoalInput" type="number" value="2000" />
+      <label>Seu objetivo</label>
+      <div class="chip-row" id="objetivoChips">
+        <button type="button" class="chip" data-obj="perder">Perder peso</button>
+        <button type="button" class="chip" data-obj="manter">Manter peso</button>
+        <button type="button" class="chip" data-obj="ganhar">Ganhar peso</button>
+      </div>
+      <button class="primary" style="margin-top:12px;" onclick="saveDailyGoal()">Salvar</button>
     </div>
 
     <h2 style="margin-top:24px;">Refeições de hoje</h2>
@@ -1205,12 +1358,22 @@ function renderBottomNav() {
     return;
   }
   nav.classList.remove("hidden");
-  BOTTOM_NAV.forEach((item) => {
+  BOTTOM_NAV.forEach((item, i) => {
     const btn = document.createElement("button");
     btn.dataset.navKey = item.key;
     btn.innerHTML = `<span class="bn-icon">${item.icon}</span><span class="bn-label">${item.label}</span>`;
     btn.onclick = () => showView(item.key);
     nav.appendChild(btn);
+
+    // botão "+" flutuante no meio da barra — atalho pra Análise de Prato,
+    // que antes ficava como um card de ação rápida na tela inicial.
+    if (i === 1) {
+      const plusWrap = document.createElement("div");
+      plusWrap.className = "bn-plus-wrap";
+      plusWrap.innerHTML = `<button type="button" class="bn-plus-btn" title="Análise de Prato">+</button>`;
+      plusWrap.querySelector("button").onclick = () => showView("registrar");
+      nav.appendChild(plusWrap);
+    }
   });
 }
 
@@ -1225,6 +1388,16 @@ function renderHeaderActions() {
     adminBtn.title = "Painel admin";
     adminBtn.onclick = () => showView("admin");
     el.appendChild(adminBtn);
+  } else {
+    const bellWrap = document.createElement("div");
+    bellWrap.className = "bell-wrap";
+    bellWrap.innerHTML = `
+      <button type="button" class="header-icon-btn" id="bellBtn" title="Avisos">🔔<span id="bellDot" class="bell-dot hidden"></span></button>
+      <div id="bellPanel" class="bell-panel hidden"></div>
+    `;
+    bellWrap.querySelector("#bellBtn").onclick = () => window.toggleBellPanel();
+    el.appendChild(bellWrap);
+    renderBellPanel();
   }
   const logoutBtn = document.createElement("button");
   logoutBtn.className = "header-icon-btn";
@@ -1249,7 +1422,7 @@ window.showView = function (name) {
     b.classList.toggle("active", b.dataset.tab === name);
   });
 
-  if (name === "app") { loadTodayMeals(); loadHomeWeightWidget(); }
+  if (name === "app") { loadTodayMeals(); loadHomeWeightWidget(); loadHomePlano(); loadHomeMetas(); loadHomeReceitas(); }
   if (name === "plano") loadPlanoView();
   if (name === "chat") loadChatView();
   if (name === "peso") loadWeightHistory();
@@ -1398,8 +1571,10 @@ onAuthStateChanged(auth, async (user) => {
   window._state.dailyGoal = userData.dailyGoal || 2000;
   window._state.objetivo = userData.objetivo || "manter";
   window._state.subscriptionStatus = userData.subscriptionStatus || "pending_payment";
+  window._state.userData = userData;
   document.getElementById("dailyGoalInput").value = window._state.dailyGoal;
   setActiveChip("objetivoChips", window._state.objetivo);
+  atualizarAvisos(userData);
 
   renderBottomNav();
   renderHeaderActions();
@@ -1457,6 +1632,220 @@ window.saveDailyGoal = async function () {
   loadTodayMeals();
 };
 
+// ---------- Sino de avisos (cabeçalho) ----------
+// Não é um sistema de notificação push de verdade — é um resumo rápido de
+// coisas que já calculamos mesmo assim (vencimento da assinatura manual,
+// incentivo com base nas metas da semana), pra abrir num painel simples.
+window.toggleBellPanel = function () {
+  document.getElementById("bellPanel")?.classList.toggle("hidden");
+};
+
+function renderBellPanel() {
+  const panel = document.getElementById("bellPanel");
+  const dot = document.getElementById("bellDot");
+  if (!panel) return;
+  const avisos = window._state.notifs || [];
+  dot?.classList.toggle("hidden", avisos.length === 0);
+  panel.innerHTML = avisos.length
+    ? avisos.map((a) => `<p>${a}</p>`).join("")
+    : `<p class="muted">Nenhum aviso novo por aqui.</p>`;
+}
+
+function atualizarAvisos(userData) {
+  const avisos = [];
+  if (userData && userData.subscriptionPaymentMethod === "manual" && userData.subscriptionExpiresAt) {
+    const expiraEm = userData.subscriptionExpiresAt.toDate
+      ? userData.subscriptionExpiresAt.toDate()
+      : new Date(userData.subscriptionExpiresAt);
+    const diasRestantes = Math.ceil((expiraEm.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+    if (diasRestantes <= 5 && diasRestantes >= 0) {
+      avisos.push(
+        `⏳ Sua assinatura via Pix vence em ${diasRestantes} dia(s) — pague de novo pra não perder o acesso.`
+      );
+    }
+  }
+  window._state.notifs = avisos;
+  renderBellPanel();
+}
+
+// ---------- Meta de peso (peso objetivo + data) ----------
+window.openWeightGoalEditor = function () {
+  const el = document.getElementById("weightGoalEditor");
+  if (!el) return;
+  const uData = window._state.userData || {};
+  if (uData.goalWeightKg) document.getElementById("goalWeightInput").value = uData.goalWeightKg;
+  if (uData.goalWeightDate) document.getElementById("goalWeightDateInput").value = uData.goalWeightDate;
+  el.classList.toggle("hidden");
+};
+
+window.saveWeightGoal = async function () {
+  const statusEl = document.getElementById("weightGoalStatus");
+  const goalWeightKg = Number(document.getElementById("goalWeightInput").value) || null;
+  const goalWeightDate = document.getElementById("goalWeightDateInput").value || null;
+  if (!goalWeightKg) {
+    statusEl.textContent = "Digite um peso objetivo válido.";
+    return;
+  }
+  statusEl.textContent = "Salvando...";
+  try {
+    await setDoc(doc(db, "users", window._state.user.uid), { goalWeightKg, goalWeightDate }, { merge: true });
+    window._state.userData = { ...(window._state.userData || {}), goalWeightKg, goalWeightDate };
+    statusEl.textContent = "Meta salva!";
+    document.getElementById("weightGoalEditor").classList.add("hidden");
+    loadHomeWeightWidget();
+  } catch (e) {
+    statusEl.textContent = "Erro ao salvar meta: " + e.message;
+  }
+};
+
+// ---------- Plano de hoje (widget da tela inicial) ----------
+const NOMES_DIA_SEMANA = [
+  "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo",
+];
+const HORARIO_REFEICAO = [
+  { match: "café", hora: "08:00", icone: "🍳" },
+  { match: "almoço", hora: "12:00", icone: "🍽️" },
+  { match: "lanche", hora: "16:00", icone: "🍎" },
+  { match: "jantar", hora: "20:00", icone: "🍲" },
+];
+
+function refeicaoInfo(nomeRefeicao, indice) {
+  const nome = (nomeRefeicao || "").toLowerCase();
+  const encontrada = HORARIO_REFEICAO.find((h) => nome.includes(h.match));
+  if (encontrada) return encontrada;
+  const fallback = HORARIO_REFEICAO[indice % HORARIO_REFEICAO.length];
+  return { hora: fallback.hora, icone: fallback.icone };
+}
+
+async function loadHomePlano() {
+  const el = document.getElementById("homePlanoHoje");
+  if (!el || !window._state.user) return;
+  try {
+    const snap = await getDocs(
+      query(collection(db, "users", window._state.user.uid, "nutritionCycles"), where("status", "==", "ativo"), limit(1))
+    );
+    if (snap.empty) {
+      el.innerHTML = `<p class="plano-hoje-empty">Você ainda não tem um plano ativo. <a href="#" onclick="showView('plano'); return false;">Criar plano</a></p>`;
+      return;
+    }
+    const ativo = snap.docs[0].data();
+    const dias = (ativo.plano && ativo.plano.dias) || [];
+    const hojeIndex = (new Date().getDay() + 6) % 7; // 0 = Segunda-feira
+    const nomeHoje = NOMES_DIA_SEMANA[hojeIndex];
+    const diaHoje = dias.find((d) => d.dia === nomeHoje) || dias[0];
+    const refeicoes = (diaHoje && diaHoje.refeicoes) || [];
+    if (refeicoes.length === 0) {
+      el.innerHTML = `<p class="plano-hoje-empty">Nenhuma refeição encontrada pra hoje no plano.</p>`;
+      return;
+    }
+    el.innerHTML = refeicoes
+      .map((r, i) => {
+        const info = refeicaoInfo(r.nome_refeicao, i);
+        return `
+          <div class="plano-hoje-item" onclick="showView('plano')">
+            <div class="phi-circle">${info.icone}</div>
+            <div class="phi-name">${r.nome_refeicao || r.prato || "Refeição"}</div>
+            <div class="phi-time">${info.hora}</div>
+          </div>
+        `;
+      })
+      .join("");
+  } catch (e) {
+    el.innerHTML = `<p class="plano-hoje-empty">Não foi possível carregar o plano de hoje.</p>`;
+  }
+}
+
+// ---------- Metas (engajamento semanal / mensal) ----------
+// Não é uma lista de tarefas — é quantos dias, dessa semana/mês (até hoje),
+// a pessoa registrou pelo menos uma refeição no app. Um jeito simples e
+// honesto de medir consistência, alinhado com o foco do app em
+// acompanhamento contínuo (e não só em bater a meta de caloria certinha).
+async function loadHomeMetas() {
+  if (!window._state.user) return;
+  const agora = new Date();
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const inicioSemana = new Date(agora);
+  const diaSemanaIdx = (agora.getDay() + 6) % 7; // 0 = segunda
+  inicioSemana.setDate(agora.getDate() - diaSemanaIdx);
+  inicioSemana.setHours(0, 0, 0, 0);
+
+  const diasComRefeicaoSemana = new Set();
+  const diasComRefeicaoMes = new Set();
+
+  try {
+    const snap = await getDocs(
+      query(
+        collection(db, "users", window._state.user.uid, "meals"),
+        where("createdAt", ">=", Timestamp.fromDate(inicioMes)),
+        orderBy("createdAt", "asc")
+      )
+    );
+    snap.forEach((docSnap) => {
+      const d = docSnap.data();
+      const when = d.createdAt?.toDate ? d.createdAt.toDate() : null;
+      if (!when) return;
+      const chave = when.toDateString();
+      diasComRefeicaoMes.add(chave);
+      if (when >= inicioSemana) diasComRefeicaoSemana.add(chave);
+    });
+  } catch (e) {
+    // segue com os sets vazios — a tela mostra 0 de X em vez de travar
+  }
+
+  const totalSemana = diaSemanaIdx + 1; // dias já passados da semana, incluindo hoje
+  const totalMes = agora.getDate(); // dias já passados do mês, incluindo hoje
+  const feitosSemana = Math.min(diasComRefeicaoSemana.size, totalSemana);
+  const feitosMes = Math.min(diasComRefeicaoMes.size, totalMes);
+
+  const pctSemana = totalSemana ? Math.round((feitosSemana / totalSemana) * 100) : 0;
+  const pctMes = totalMes ? Math.round((feitosMes / totalMes) * 100) : 0;
+
+  document.getElementById("metaSemanalDonut").style.background = pieGradient([
+    { pct: pctSemana, color: "#3ecf8e" },
+    { pct: 100 - pctSemana, color: "#223140" },
+  ]);
+  document.getElementById("metaSemanalPct").textContent = pctSemana + "%";
+  document.getElementById("metaSemanalLabel").textContent = `${feitosSemana} de ${totalSemana} concluídas`;
+
+  document.getElementById("metaMensalDonut").style.background = pieGradient([
+    { pct: pctMes, color: "#3ecf8e" },
+    { pct: 100 - pctMes, color: "#223140" },
+  ]);
+  document.getElementById("metaMensalPct").textContent = pctMes + "%";
+  document.getElementById("metaMensalLabel").textContent = `${feitosMes} de ${totalMes} concluídas`;
+}
+
+// ---------- Receitas para você ----------
+// Uma pequena vitrine fixa (sem foto real, já que não temos banco de fotos
+// de receitas) filtrada pelo objetivo da pessoa — clicar leva pra Cozinha
+// Inteligente, onde ela pode gerar a receita completa com a IA.
+const RECEITAS_SUGERIDAS = [
+  { nome: "Frango grelhado com legumes", kcal: 420, icone: "🍗", objetivos: ["perder", "manter"] },
+  { nome: "Panqueca de aveia com banana", kcal: 310, icone: "🥞", objetivos: ["manter", "ganhar"] },
+  { nome: "Bowl de quinoa vegetariano", kcal: 380, icone: "🥗", objetivos: ["perder", "manter"] },
+  { nome: "Omelete proteico com espinafre", kcal: 340, icone: "🍳", objetivos: ["perder", "ganhar"] },
+  { nome: "Salmão com batata-doce", kcal: 520, icone: "🐟", objetivos: ["ganhar", "manter"] },
+  { nome: "Smoothie de whey com frutas", kcal: 280, icone: "🥤", objetivos: ["ganhar", "manter"] },
+];
+
+function loadHomeReceitas() {
+  const el = document.getElementById("homeReceitasRow");
+  if (!el) return;
+  const objetivo = window._state.objetivo || "manter";
+  const filtradas = RECEITAS_SUGERIDAS.filter((r) => r.objetivos.includes(objetivo));
+  const lista = (filtradas.length ? filtradas : RECEITAS_SUGERIDAS).slice(0, 4);
+  el.innerHTML = lista
+    .map(
+      (r) => `
+        <div class="receita-card-mini" onclick="showView('receita')">
+          <div class="rc-icon">${r.icone}</div>
+          <div class="rc-name">${r.nome}</div>
+          <div class="rc-kcal">~${r.kcal} kcal</div>
+        </div>
+      `
+    )
+    .join("");
+}
 
 // ---------- Assinatura / paywall ----------
 
@@ -2133,14 +2522,48 @@ async function loadHomeWeightWidget() {
     entries.push({ peso: d.peso, date: when });
   });
 
+  const uData = window._state.userData || {};
+  const goalWeightKg = uData.goalWeightKg || null;
+  const goalWeightDate = uData.goalWeightDate || null;
+
+  document.getElementById("homeGoalWeightLabel").textContent = goalWeightKg ? goalWeightKg.toFixed(1) + " kg" : "—";
+  document.getElementById("homeGoalDateLabel").textContent = goalWeightDate
+    ? `Meta até ${new Date(goalWeightDate + "T00:00:00").toLocaleDateString("pt-BR")}`
+    : "Defina uma meta de peso e uma data em \"Editar meta\"";
+
+  const ringPctEl = document.getElementById("homeWeightRingPct");
+  const ringEl = document.getElementById("homeWeightRing");
+
   if (entries.length === 0) {
     currentEl.textContent = "—";
     deltaEl.textContent = "Registre seu peso pela primeira vez";
+    ringPctEl.textContent = "—";
+    ringEl.style.background = "var(--border)";
+    document.getElementById("homeWeightChart").innerHTML = `<p class="muted">Registre pelo menos 2 pesagens para ver o gráfico de evolução.</p>`;
     return;
   }
 
   const latest = entries[entries.length - 1];
+  const first = entries[0];
   currentEl.textContent = latest.peso + " kg";
+
+  // % de progresso até a meta: compara quanto já andou (peso inicial → atual)
+  // com a distância total (peso inicial → objetivo). Só faz sentido com uma
+  // meta de peso definida — sem ela, mostramos o anel vazio.
+  if (goalWeightKg && first.peso !== goalWeightKg) {
+    const distanciaTotal = first.peso - goalWeightKg;
+    const distanciaAndada = first.peso - latest.peso;
+    let pct = Math.round((distanciaAndada / distanciaTotal) * 100);
+    pct = Math.max(0, Math.min(100, pct));
+    ringPctEl.textContent = pct + "%";
+    ringEl.style.background = pieGradient([
+      { pct, color: "#3ecf8e" },
+      { pct: 100 - pct, color: "#223140" },
+    ]);
+  } else {
+    ringPctEl.textContent = goalWeightKg ? "✓" : "—";
+    ringEl.style.background = goalWeightKg ? "var(--accent)" : "var(--border)";
+  }
 
   const tenDaysAgo = new Date(latest.date.getTime() - 10 * 24 * 60 * 60 * 1000);
   let reference = null;
@@ -2154,6 +2577,8 @@ async function loadHomeWeightWidget() {
   } else {
     deltaEl.textContent = "aguardando 10 dias de histórico";
   }
+
+  document.getElementById("homeWeightChart").innerHTML = buildWeightChartSVG(entries.slice(-10));
 }
 
 // ---------- Plano semanal ----------
