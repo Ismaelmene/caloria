@@ -3233,7 +3233,12 @@ function renderAdminBudgetTable(usersSnap) {
         <button class="secondary" style="padding:4px 8px;" onclick="ajustarCreditos('${uid}', -10)">-10</button><br/>
         <button class="secondary" style="padding:4px 8px; margin-top:4px;" onclick="alternarTesteGratis('${uid}', ${!temTeste})">
           ${temTeste ? "Remover teste grátis" : "Liberar teste grátis"}
-        </button>
+        </button><br/>
+        ${
+          u.role === "admin"
+            ? ""
+            : `<button class="secondary" style="padding:4px 8px; margin-top:4px; color:#ff8a8a;" onclick="excluirUsuarioAdmin('${uid}', '${(nomeCliente !== "—" ? nomeCliente : email).replace(/'/g, "\\'")}')">Excluir usuário</button>`
+        }
       </td>
     `;
     tbody.appendChild(tr);
@@ -3320,6 +3325,31 @@ function renderAdminLeadsTable(usersSnap) {
     tbody.appendChild(tr);
   });
 }
+
+// Exclui um usuário de verdade (conta de login + todos os dados dele:
+// refeições, pesos, plano, chat, chamados de suporte). Passa pela função
+// serverless /api/admin-delete-user (só admin consegue chamar) porque
+// apagar o cadastro de login (Firebase Auth) só dá pra fazer com o Admin
+// SDK — direto pelo navegador não tem como. Não tem como desfazer, por
+// isso o "confirm" antes.
+window.excluirUsuarioAdmin = async function (uid, nomeOuEmail) {
+  const confirmado = confirm(
+    `Excluir "${nomeOuEmail}" de vez? Isso apaga a conta de login dela, o histórico de refeições, peso, plano alimentar e chamados de suporte. Não tem como desfazer.`
+  );
+  if (!confirmado) return;
+  try {
+    const res = await fetch("/api/admin-delete-user", {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify({ targetUid: uid }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "erro ao excluir usuário");
+    loadAdminPanel();
+  } catch (e) {
+    alert("Erro ao excluir usuário: " + e.message);
+  }
+};
 
 window.ajustarCreditos = async function (uid, delta) {
   try {
