@@ -657,7 +657,7 @@
             <tr><td>Disponibilidade</td><td>Só no horário marcado</td><td>24 horas, todos os dias</td></tr>
             <tr><td>Calorias do prato</td><td>Você calcula na mão</td><td>Foto e pronto</td></tr>
             <tr><td>Tirar uma dúvida rápida</td><td>Espera a próxima consulta</td><td>Na hora, pelo chat</td></tr>
-            <tr><td>Custo mensal com acompanhamento</td><td>Mais de R$ 1.500/mês</td><td id="landingPriceCompareCell">R$ 70/mês</td></tr>
+            <tr><td>Custo mensal com acompanhamento</td><td>Mais de R$ 1.500/mês</td><td>Muito mais em conta</td></tr>
           </tbody>
         </table>
       </div>
@@ -683,10 +683,10 @@
 
     <div class="landing-section">
       <div class="landing-price-box">
-        <div id="landingCupomBadge" class="hidden" style="display:inline-block; background:var(--accent); color:#06210f; font-weight:700; font-size:12px; padding:4px 10px; border-radius:999px; margin-bottom:8px;"></div>
-        <div class="price" id="landingPriceBox">R$ 70<small>/mês</small></div>
-        <p class="muted" style="margin:8px 0 16px;">Todos os recursos inclusos. Sem letras miúdas: cancele quando quiser, direto pelo Mercado Pago, sem multa.</p>
-        <button class="primary" onclick="irParaCadastro()">Assinar agora</button>
+        <div class="price" style="font-size:22px;">Muito mais em conta 💚</div>
+        <p class="muted" style="margin:8px 0 6px;">Crie sua conta gratuitamente e veja o valor da assinatura — sem compromisso nenhum.</p>
+        <p style="margin:0 0 16px; font-weight:700; color:var(--accent);">🛡️ Garantia de 7 dias: não gostou, devolvemos 100% do seu dinheiro.</p>
+        <button class="primary" onclick="irParaCadastro()">Criar minha conta</button>
       </div>
     </div>
 
@@ -722,6 +722,7 @@
         <div id="refBox" class="hidden">
           <p class="muted">Você foi indicado por um afiliado (código: <strong id="refCodeShown"></strong>)</p>
         </div>
+        <p id="authGuaranteeNote" class="hidden" style="text-align:center; font-weight:700; color:var(--accent); margin-bottom:10px;">🛡️ Garantia de 7 dias: não gostou, devolvemos 100% do seu dinheiro.</p>
         <button class="primary" id="authSubmitBtn" onclick="handleAuthSubmit()">Entrar</button>
         <p class="muted" style="margin-top:10px;">
           <a href="#" id="authToggleLink" onclick="toggleAuthMode(event)" style="color:var(--accent);">Ainda não tenho conta — criar cadastro</a>
@@ -751,7 +752,8 @@
     <div class="hero-kcal" style="font-size:32px;">
       <span id="paywallPriceOriginal">R$ 70</span><span id="paywallPriceFinal" class="hidden"></span><span style="font-size:16px; font-weight:600;">/mês</span>
     </div>
-    <p class="muted" style="margin:4px 0 18px;">Cancele quando quiser, direto pelo Mercado Pago.</p>
+    <p class="muted" style="margin:4px 0 8px;">Cancele quando quiser, direto pelo Mercado Pago.</p>
+    <p style="margin:0 0 18px; font-weight:700; color:var(--accent);">🛡️ Garantia de 7 dias: não gostou, devolvemos 100% do seu dinheiro.</p>
 
     <div style="text-align:left; max-width:320px; margin:0 auto 16px;">
       <label style="font-size:12px;">Cupom de desconto (opcional)</label>
@@ -1174,6 +1176,7 @@
     <nav id="adminSidebar" class="admin-sidebar hidden">
       <button type="button" class="admin-sidebar-item active" data-sub="dashboard" onclick="showAdminSection('dashboard')">📊 Visão geral</button>
       <button type="button" class="admin-sidebar-item" data-sub="usuarios" onclick="showAdminSection('usuarios')">👥 Usuários</button>
+      <button type="button" class="admin-sidebar-item" data-sub="leads" onclick="showAdminSection('leads')">📋 Cadastros sem pagamento<span id="leadsCountBadge" class="sidebar-count hidden">0</span></button>
       <button type="button" class="admin-sidebar-item" data-sub="cupons" onclick="showAdminSection('cupons')">🎟️ Cupons de desconto</button>
       <button type="button" class="admin-sidebar-item" data-sub="afiliados" onclick="showAdminSection('afiliados')">🤝 Afiliados</button>
       <button type="button" class="admin-sidebar-item" data-sub="promover" onclick="showAdminSection('promover')">⭐ Promover usuário</button>
@@ -1259,6 +1262,25 @@
       </div>
     </div>
 
+    <!-- ---------- Cadastros sem pagamento ---------- -->
+    <div id="admin-sub-leads" class="admin-sub hidden">
+      <p class="muted">Pessoas que criaram conta (com e-mail e celular) mas ainda não pagaram e não têm teste grátis liberado. Ordenado pelas que estão esperando há mais tempo — boas candidatas a receber uma mensagem oferecendo um desconto maior pra fechar.</p>
+      <div class="admin-table-wrap">
+        <table id="adminLeadsTable">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Cadastrado em</th>
+              <th>Dias sem pagar</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted" id="adminLeadsVazio" style="margin-top:10px;"></p>
+    </div>
+
     <!-- ---------- Cupons de desconto ---------- -->
     <div id="admin-sub-cupons" class="admin-sub hidden">
       <p class="muted">Preço cheio da assinatura: R$ 70/mês. O desconto do cupom vale sobre esse valor — no cartão, o valor com desconto fica valendo enquanto a assinatura durar; no Pix, vale pra aquele pagamento avulso.</p>
@@ -1289,9 +1311,9 @@
       </div>
       <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
         <input type="checkbox" id="cupomDestaqueAdmin" style="width:auto; margin:0;" />
-        <span>Destacar esse desconto na página de vendas (mostra o preço já com desconto pra quem ainda não é cliente)</span>
+        <span>Aplicar esse cupom automaticamente pra quem acabou de se cadastrar (já preenche sozinho na tela de assinatura, sem a pessoa digitar o código)</span>
       </label>
-      <p class="muted" style="margin:2px 0 12px;">Só um cupom fica em destaque por vez — ativar esse aqui desliga o destaque de qualquer outro automaticamente.</p>
+      <p class="muted" style="margin:2px 0 12px;">Só um cupom fica automático por vez — ativar esse aqui desliga o automático de qualquer outro. A página de vendas não mostra preço nenhum — o valor só aparece depois que a pessoa cria a conta.</p>
       <button class="primary" onclick="criarCupom()">Criar cupom</button>
       <p class="muted" id="cupomStatusAdmin"></p>
 
@@ -1304,7 +1326,7 @@
               <th>Válido até</th>
               <th>Usos</th>
               <th>Status</th>
-              <th>Página de vendas</th>
+              <th>Automático no cadastro</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -1508,37 +1530,18 @@ window.showView = function (name) {
   if (name === "suporte") loadSuporteCliente();
 };
 
-// ---------- Cupom em destaque na página de vendas ----------
-// Busca (sem precisar estar logado) se tem algum cupom marcado como
-// "mostrar na página de vendas" no painel admin e, se tiver, atualiza os
-// preços mostrados pra quem ainda não é cliente (bloco de preço da landing
-// + tabela comparativa). O mesmo resultado é reaproveitado depois na tela de
-// assinatura pra aplicar esse cupom sozinho, sem a pessoa precisar digitar o
-// código de novo.
-window._state.featuredCouponPromise = (async function carregarCupomDestaqueLanding() {
+// ---------- Cupom automático pós-cadastro ----------
+// Busca (sem precisar estar logado) se tem algum cupom marcado no painel
+// admin pra aplicar sozinho em quem acabou de criar conta. Não mostramos
+// nenhum preço na página de vendas em si — o valor só aparece depois que a
+// pessoa cria a conta, na tela de assinatura — mas se ela vier de um link
+// com cupom em destaque, esse cupom já entra aplicado lá, sem precisar
+// digitar o código de novo.
+window._state.featuredCouponPromise = (async function buscarCupomAutomaticoPosCadastro() {
   try {
     const res = await fetch("/api/featured-coupon");
     const data = await res.json();
     if (!data || !data.ativo) return null;
-
-    const fmt = (v) => "R$ " + Number(v).toFixed(2).replace(".", ",");
-    const precoFinalLabel = fmt(data.precoFinal);
-    const precoOriginalLabel = fmt(data.precoOriginal);
-    const descontoLabel = data.tipo === "fixo" ? fmt(data.valor) + " OFF" : data.valor + "% OFF";
-
-    const badge = document.getElementById("landingCupomBadge");
-    if (badge) {
-      badge.textContent = `Cupom ${data.codigo} aplicado — ${descontoLabel}`;
-      badge.classList.remove("hidden");
-    }
-    const priceBox = document.getElementById("landingPriceBox");
-    if (priceBox) {
-      priceBox.innerHTML = `<span style="text-decoration:line-through; opacity:0.55; font-size:18px; margin-right:6px;">${precoOriginalLabel}</span>${precoFinalLabel}<small>/mês</small>`;
-    }
-    const compareCell = document.getElementById("landingPriceCompareCell");
-    if (compareCell) {
-      compareCell.innerHTML = `<span style="text-decoration:line-through; opacity:0.55;">${precoOriginalLabel}/mês</span> ${precoFinalLabel}/mês`;
-    }
     return data;
   } catch (e) {
     return null;
@@ -1561,6 +1564,7 @@ function syncAuthModeUI() {
     ? "Já tenho conta — entrar"
     : "Ainda não tenho conta — criar cadastro";
   document.getElementById("authExtraFields").classList.toggle("hidden", !isSignupMode);
+  document.getElementById("authGuaranteeNote").classList.toggle("hidden", !isSignupMode);
 }
 
 window.toggleAuthMode = function (e) {
@@ -3245,6 +3249,78 @@ function renderAdminBudgetTable(usersSnap) {
   }
 }
 
+// Monta um link do WhatsApp já com o número da pessoa, pra você só clicar e
+// mandar mensagem. Aceita o telefone em qualquer formato (com parênteses,
+// espaço, traço etc.) e adiciona o 55 do Brasil na frente se a pessoa não
+// tiver digitado.
+function whatsappLink(telefone) {
+  const digitos = String(telefone || "").replace(/\D/g, "");
+  if (!digitos) return null;
+  const comPais = digitos.startsWith("55") ? digitos : "55" + digitos;
+  return `https://wa.me/${comPais}`;
+}
+
+// Lista de quem criou conta mas ainda não pagou (nem tem teste grátis
+// liberado) — pra você contatar na mão oferecendo um desconto maior e tentar
+// converter. Reaproveita o mesmo "usersSnap" já buscado em loadAdminPanel,
+// sem precisar de outra consulta ao Firestore. Ordenado por quem está
+// esperando há mais tempo (maior prioridade de contato) primeiro.
+function renderAdminLeadsTable(usersSnap) {
+  const tbody = document.querySelector("#adminLeadsTable tbody");
+  const vazioMsg = document.getElementById("adminLeadsVazio");
+  const badge = document.getElementById("leadsCountBadge");
+  tbody.innerHTML = "";
+
+  const leads = [];
+  usersSnap.forEach((d) => {
+    const u = d.data();
+    if (u.role === "admin") return;
+    if (u.trialGrantedByAdmin === true) return;
+    const semAcesso = u.subscriptionStatus !== "active" || assinaturaExpirada(u);
+    if (!semAcesso) return;
+    leads.push({ uid: d.id, ...u });
+  });
+
+  leads.sort((a, b) => {
+    const ta = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+    const tb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+    return ta - tb; // mais antigos primeiro
+  });
+
+  if (badge) {
+    if (leads.length > 0) {
+      badge.textContent = String(leads.length);
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+  }
+
+  if (leads.length === 0) {
+    vazioMsg.textContent = "Ninguém nessa situação agora — todo mundo cadastrado ou já pagou, ou tem teste grátis liberado.";
+    return;
+  }
+  vazioMsg.textContent = "";
+
+  leads.forEach((u) => {
+    const nome = u.nome || "—";
+    const email = u.email || "—";
+    const telefone = u.telefone || "—";
+    const cadastradoEm = u.createdAt && u.createdAt.toDate ? u.createdAt.toDate() : null;
+    const dias = cadastradoEm ? Math.max(0, Math.floor((Date.now() - cadastradoEm.getTime()) / 86400000)) : "—";
+    const wa = whatsappLink(u.telefone);
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${nome}</strong><br/><span class="muted">${email}</span><br/><span class="muted">${telefone}</span></td>
+      <td>${cadastradoEm ? cadastradoEm.toLocaleDateString("pt-BR") : "—"}</td>
+      <td>${dias}</td>
+      <td>${wa ? `<a class="secondary" style="display:inline-block; padding:4px 8px; text-decoration:none;" href="${wa}" target="_blank" rel="noopener">Chamar no WhatsApp</a>` : '<span class="muted">Sem telefone</span>'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 window.ajustarCreditos = async function (uid, delta) {
   try {
     await updateDoc(doc(db, "users", uid), { extraCredits: increment(delta) });
@@ -3268,9 +3344,9 @@ window.alternarTesteGratis = async function (uid, ativar) {
 
 // ---------- Cupons de desconto (painel admin) ----------
 
-// Só um cupom pode estar em destaque na página de vendas por vez — antes de
-// ligar o destaque num cupom, desliga de qualquer outro que já estivesse
-// marcado (senão a página de vendas não saberia qual dos dois mostrar).
+// Só um cupom pode ficar como "automático pós-cadastro" por vez — antes de
+// ligar isso num cupom, desliga de qualquer outro que já estivesse marcado
+// (senão não daria pra saber qual dos dois aplicar sozinho).
 async function desmarcarOutrosDestaques(codigoQueFica) {
   const snap = await getDocs(query(collection(db, "coupons"), where("mostrarNaLanding", "==", true)));
   for (const d of snap.docs) {
@@ -3333,7 +3409,7 @@ window.alternarDestaqueLanding = async function (codigo, ativar) {
     await updateDoc(doc(db, "coupons", codigo), { mostrarNaLanding: ativar });
     loadAdminPanel();
   } catch (e) {
-    alert("Erro ao alterar destaque na página de vendas: " + e.message);
+    alert("Erro ao alterar cupom automático: " + e.message);
   }
 };
 
@@ -3391,8 +3467,8 @@ function renderAdminCouponsTable(couponsSnap) {
       <td>${usosLabel}</td>
       <td><span class="badge ${statusClasse}">${statusLabel}</span></td>
       <td>
-        ${emDestaque ? '<span class="badge active">Em destaque</span>' : '<span class="muted">—</span>'}<br/>
-        <button class="secondary" style="padding:4px 8px; margin-top:4px;" onclick="alternarDestaqueLanding('${codigo}', ${!emDestaque})">${emDestaque ? "Remover destaque" : "Destacar"}</button>
+        ${emDestaque ? '<span class="badge active">Automático</span>' : '<span class="muted">—</span>'}<br/>
+        <button class="secondary" style="padding:4px 8px; margin-top:4px;" onclick="alternarDestaqueLanding('${codigo}', ${!emDestaque})">${emDestaque ? "Remover automático" : "Deixar automático"}</button>
       </td>
       <td>
         <button class="secondary" style="padding:4px 8px;" onclick="alternarCupomAtivo('${codigo}', ${c.ativo === false})">${c.ativo === false ? "Ativar" : "Desativar"}</button>
@@ -3422,6 +3498,7 @@ window.showAdminSection = function (name) {
   const titulos = {
     dashboard: "Visão geral",
     usuarios: "Usuários",
+    leads: "Cadastros sem pagamento",
     cupons: "Cupons de desconto",
     afiliados: "Afiliados",
     promover: "Promover usuário",
@@ -3603,6 +3680,7 @@ async function loadAdminDashboard(usersSnap, paymentsSnap) {
 async function loadAdminPanel() {
   const usersSnap = await getDocs(collection(db, "users"));
   renderAdminBudgetTable(usersSnap);
+  renderAdminLeadsTable(usersSnap);
 
   const couponsSnap = await getDocs(collection(db, "coupons"));
   renderAdminCouponsTable(couponsSnap);
